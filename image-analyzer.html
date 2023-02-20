@@ -4,7 +4,26 @@
     canvas {
       border: 1px solid black;
     }
+    .easter-egg {
+      position: fixed;
+      bottom: 0;
+      color: grey;
+    }
   </style>
+  <head>
+    <meta charset="UTF-8">
+    <title>Image Analyzer</title>
+  </head>
+  <body>
+    <h1>Image Analyzer</h1>
+    <input type="file" id="imageInput">
+    <br>
+    <img id="imageDisplay">
+    <br>
+    <!-- <button onclick="analyzeImage()">Analyze Image</button> -->
+    <button class="easter-egg" onclick="playGame()">Play Game</button>
+    <p id="result"></p>
+  </body>
   <script>
     function playGame() {
       // Define some constants
@@ -173,12 +192,11 @@
       draw();
     }
 
-    function analyzeImage() {
-      const imageInput = document.getElementById('imageInput');
+    function analyzeImage(event) {
       const imageDisplay = document.getElementById('imageDisplay');
       const result = document.getElementById('result');
 
-      const file = imageInput.files[0];
+      const file = event.target.files[0];
       const reader = new FileReader();
 
       reader.addEventListener('load', function() {
@@ -210,19 +228,7 @@
 
       reader.readAsDataURL(file);
     }
+    const imageUpload = document.getElementById("imageInput");
+    imageUpload.addEventListener("change", analyzeImage);
   </script>
-  <head>
-    <meta charset="UTF-8">
-    <title>Image Analyzer</title>
-  </head>
-  <body>
-    <h1>Image Analyzer</h1>
-    <input type="file" id="imageInput">
-    <br>
-    <img id="imageDisplay">
-    <br>
-    <button onclick="analyzeImage()">Analyze Image</button>
-    <button onclick="playGame()">Play Game</button>
-    <p id="result"></p>
-  </body>
 </html>

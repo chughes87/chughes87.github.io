@@ -221,7 +221,7 @@
               blackPixels++;
             }
           }
-          const percentage = Math.round((blackPixels / (img.width * img.height)) * 100);
+          const percentage = ((blackPixels / (img.width * img.height)) * 100).toFixed(2);
           result.innerHTML = `Black pixels: ${blackPixels} (${percentage}%)`;
         };
       });

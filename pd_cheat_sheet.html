@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pure Data Cheat Sheet - macOS</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Menlo", "Monaco", "Courier New", monospace;
+        background: #1a1a1a;
+        color: #e0e0e0;
+        padding: 20px;
+        line-height: 1.4;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 28px;
+        color: #4fc3f7;
+        margin-bottom: 10px;
+        text-align: center;
+        letter-spacing: 2px;
+      }
+
+      .subtitle {
+        text-align: center;
+        color: #888;
+        margin-bottom: 25px;
+        font-size: 13px;
+      }
+
+      .grid {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        align-items: flex-start;
+      }
+
+      .column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        min-height: 200px;
+      }
+
+      .column.drag-over {
+        background: rgba(79, 195, 247, 0.1);
+        border-radius: 8px;
+      }
+
+      .section {
+        background: #252525;
+        border: 1px solid #333;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: move;
+        transition: opacity 0.2s, transform 0.2s;
+      }
+
+      .section.dragging {
+        opacity: 0.5;
+        transform: scale(0.95);
+      }
+
+      .section.drag-over-item {
+        border-top: 3px solid #4fc3f7;
+      }
+
+      .section h2 {
+        font-size: 14px;
+        color: #4fc3f7;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 15px;
+        margin: 0;
+        cursor: pointer;
+        user-select: none;
+        background: #2a2a2a;
+        border-bottom: 2px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+      }
+
+      .section h2:hover {
+        background: #303030;
+      }
+
+      .section h2::after {
+        content: "▼";
+        font-size: 10px;
+        transition: transform 0.3s;
+      }
+
+      .section h2.collapsed::after {
+        transform: rotate(-90deg);
+      }
+
+      .section-content {
+        padding: 15px;
+        display: none;
+      }
+
+      .section-content.expanded {
+        display: block;
+      }
+
+      .shortcut {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid #2a2a2a;
+      }
+
+      .shortcut:last-child {
+        border-bottom: none;
+      }
+
+      .shortcut-key {
+        background: #333;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        color: #ffb74d;
+        white-space: nowrap;
+        font-weight: bold;
+      }
+
+      .shortcut-desc {
+        font-size: 12px;
+        color: #bbb;
+        flex: 1;
+        padding-right: 10px;
+      }
+
+      .gotcha {
+        background: #2a1a1a;
+        border-left: 3px solid #f44336;
+        padding: 10px;
+        margin: 8px 0;
+        font-size: 11px;
+        border-radius: 4px;
+      }
+
+      .gotcha strong {
+        color: #f44336;
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .objects-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .obj {
+        background: #2a2a2a;
+        padding: 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        text-align: center;
+        border: 1px solid #3a3a3a;
+      }
+
+      .obj-name {
+        color: #81c784;
+        font-weight: bold;
+      }
+
+      .obj-desc {
+        color: #888;
+        font-size: 10px;
+        margin-top: 2px;
+      }
+
+      .tip {
+        background: #1a2a1a;
+        border-left: 3px solid #66bb6a;
+        padding: 10px;
+        margin: 8px 0;
+        font-size: 11px;
+        border-radius: 4px;
+      }
+
+      .tip strong {
+        color: #66bb6a;
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .signal {
+        color: #ff9800;
+      }
+      .message {
+        color: #2196f3;
+      }
+
+      @media (max-width: 768px) {
+        .grid {
+          flex-direction: column;
+        }
+        .objects-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>⚡ PURE DATA CHEAT SHEET</h1>
+      <div class="subtitle">
+        macOS • For Andy Farnell's Designing Sound • Click headers to expand •
+        Drag to reorder
+      </div>
+
+      <div class="grid">
+        <div class="column" id="column1">
+          <!-- MODES -->
+          <div class="section" draggable="true">
+            <h2 class="collapsed">🔧 Modes & Essentials</h2>
+            <div class="section-content">
+              <div class="shortcut">
+                <span class="shortcut-desc">Toggle Edit/Run</span>
+                <span class="shortcut-key">⌘E</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Edit Mode</span>
+                <span class="shortcut-key">⌘1</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Run Mode</span>
+                <span class="shortcut-key">⌘0</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Toggle DSP (Audio)</span>
+                <span class="shortcut-key">⌘/</span>
+              </div>
+              <div class="gotcha">
+                <strong>GOTCHA #1</strong>
+                Edit mode = build patches. Run mode = interact with GUI. Mixing
+                these up is the #1 mistake!
+              </div>
+              <div class="gotcha">
+                <strong>GOTCHA #2</strong>
+                DSP must be ON to hear sound. Check the checkbox or press ⌘/
+              </div>
+            </div>
+          </div>
+
+          <!-- CREATING OBJECTS -->
+          <div class="section" draggable="true">
+            <h2 class="collapsed">📦 Creating Objects</h2>
+            <div class="section-content">
+              <div class="shortcut">
+                <span class="shortcut-desc">Object Box</span>
+                <span class="shortcut-key">⌘1</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Message Box</span>
+                <span class="shortcut-key">⌘2</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Number (Float)</span>
+                <span class="shortcut-key">⌘3</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Symbol Box</span>
+                <span class="shortcut-key">⌘4</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Comment</span>
+                <span class="shortcut-key">⌘5</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Bang (GUI)</span>
+                <span class="shortcut-key">Shift+⌘B</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Toggle</span>
+                <span class="shortcut-key">Shift+⌘T</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Slider (Vertical)</span>
+                <span class="shortcut-key">Shift+⌘V</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Slider (Horizontal)</span>
+                <span class="shortcut-key">Shift+⌘H</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- WORKFLOW -->
+          <div class="section" draggable="true">
+            <h2 class="collapsed">✂️ Workflow</h2>
+            <div class="section-content">
+              <div class="shortcut">
+                <span class="shortcut-desc">Duplicate</span>
+                <span class="shortcut-key">⌘D</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Delete</span>
+                <span class="shortcut-key">⌫</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Select All</span>
+                <span class="shortcut-key">⌘A</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Multi-Select</span>
+                <span class="shortcut-key">⌘+Click</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Undo</span>
+                <span class="shortcut-key">⌘Z</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Redo</span>
+                <span class="shortcut-key">⌘Y</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Tidy Up Selection</span>
+                <span class="shortcut-key">⌘T</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Properties</span>
+                <span class="shortcut-key">⌘I</span>
+              </div>
+              <div class="tip">
+                <strong>TIP:</strong>
+                Click on a cable to delete it. Drag from outlet to inlet to
+                create connections.
+              </div>
+            </div>
+          </div>
+
+          <!-- CONNECTION RULES -->
+          <div class="section" draggable="true">
+            <h2 class="collapsed">🔌 Connection Rules</h2>
+            <div class="section-content">
+              <div class="gotcha">
+                <strong>GOTCHA #3: Hot vs Cold Inlets</strong>
+                Messages trigger LEFT to RIGHT. Connect the RIGHT inlet first
+                (cold), then LEFT inlet (hot) to avoid incorrect calculations.
+              </div>
+              <div class="gotcha">
+                <strong>GOTCHA #4: Signal vs Message</strong>
+                <span class="signal">Thick lines (~)</span> = audio signals
+                (44.1kHz+)<br />
+                <span class="message">Thin lines</span> = control messages
+                (events)<br />
+                Can't directly mix! Use [sig~] or [snapshot~]
+              </div>
+              <div class="tip">
+                <strong>Conversion:</strong>
+                [sig~] = message → signal<br />
+                [snapshot~] = signal → message
+              </div>
+            </div>
+          </div>
+
+          <!-- FARNELL OBJECTS -->
+          <div class="section" draggable="true">
+            <h2 class="collapsed">🎵 Core Objects (Farnell)</h2>
+            <div class="section-content">
+              <div class="objects-grid">
+                <div class="obj">
+                  <div class="obj-name">[osc~]</div>
+                  <div class="obj-desc">Sine oscillator</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[phasor~]</div>
+                  <div class="obj-desc">Ramp 0→1</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[noise~]</div>
+                  <div class="obj-desc">White noise</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[*~]</div>
+                  <div class="obj-desc">Multiply signals</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[+~]</div>
+                  <div class="obj-desc">Add signals</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[dac~]</div>
+                  <div class="obj-desc">Audio output</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[lop~]</div>
+                  <div class="obj-desc">Lowpass filter</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[hip~]</div>
+                  <div class="obj-desc">Highpass filter</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[bp~]</div>
+                  <div class="obj-desc">Bandpass filter</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[line~]</div>
+                  <div class="obj-desc">Linear ramp</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[vline~]</div>
+                  <div class="obj-desc">Precise ramp</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[delwrite~]</div>
+                  <div class="obj-desc">Delay write</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[delread~]</div>
+                  <div class="obj-desc">Delay read</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[clip~]</div>
+                  <div class="obj-desc">Limit range</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[wrap~]</div>
+                  <div class="obj-desc">Wrap around</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="column" id="column2">
+          <!-- CONTROL OBJECTS -->
+          <div class="section" draggable="true">
+            <h2 class="collapsed">🎛️ Control Objects</h2>
+            <div class="section-content">
+              <div class="objects-grid">
+                <div class="obj">
+                  <div class="obj-name">[metro]</div>
+                  <div class="obj-desc">Metronome</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[delay]</div>
+                  <div class="obj-desc">Time delay</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[bang]</div>
+                  <div class="obj-desc">Trigger</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[loadbang]</div>
+                  <div class="obj-desc">Bang on load</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[random]</div>
+                  <div class="obj-desc">Random int</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[+ - * /]</div>
+                  <div class="obj-desc">Math ops</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[select]</div>
+                  <div class="obj-desc">Route values</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[trigger]</div>
+                  <div class="obj-desc">Fan out R→L</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[pack]</div>
+                  <div class="obj-desc">Combine</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[unpack]</div>
+                  <div class="obj-desc">Split</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[print]</div>
+                  <div class="obj-desc">Debug output</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[send] [s]</div>
+                  <div class="obj-desc">Wireless send</div>
+                </div>
+                <div class="obj">
+                  <div class="obj-name">[receive] [r]</div>
+                  <div class="obj-desc">Wireless recv</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MORE GOTCHAS -->
+          <div class="section" draggable="true">
+            <h2 class="collapsed">⚠️ More Gotchas</h2>
+            <div class="section-content">
+              <div class="gotcha">
+                <strong>GOTCHA #5: Feedback Loops</strong>
+                Message feedback without [delay] = CRASH. Audio feedback is OK
+                but watch for runaway DC offset.
+              </div>
+              <div class="gotcha">
+                <strong>GOTCHA #6: Bang to Output</strong>
+                Many objects need a bang to trigger output. Use [bng] or [bang]
+                to trigger.
+              </div>
+              <div class="gotcha">
+                <strong>GOTCHA #7: Symbols vs Numbers</strong>
+                "0" (symbol) ≠ 0 (number). Type matters!
+              </div>
+              <div class="gotcha">
+                <strong>GOTCHA #8: Initialization</strong>
+                Use [loadbang] to set defaults when patch opens. Critical for
+                filters and oscillators!
+              </div>
+              <div class="tip">
+                <strong>TIP: Debugging</strong>
+                Use [print label] to see message values in the console.
+                Essential for debugging control flow.
+              </div>
+            </div>
+          </div>
+
+          <!-- FILE & WINDOW -->
+          <div class="section" draggable="true">
+            <h2 class="collapsed">📁 Files & Windows</h2>
+            <div class="section-content">
+              <div class="shortcut">
+                <span class="shortcut-desc">New Patch</span>
+                <span class="shortcut-key">⌘N</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Open</span>
+                <span class="shortcut-key">⌘O</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Save</span>
+                <span class="shortcut-key">⌘S</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Save As</span>
+                <span class="shortcut-key">⌘Shift+S</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Close Window</span>
+                <span class="shortcut-key">⌘W</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Quit</span>
+                <span class="shortcut-key">⌘Q</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Find</span>
+                <span class="shortcut-key">⌘F</span>
+              </div>
+              <div class="shortcut">
+                <span class="shortcut-desc">Pd Console</span>
+                <span class="shortcut-key">⌘R</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROCEDURAL DESIGN -->
+          <div class="section" draggable="true">
+            <h2 class="collapsed">🎨 Farnell's Approach</h2>
+            <div class="section-content">
+              <div class="tip">
+                <strong>Procedural Audio Design</strong>
+                Build sounds from physical principles, not samples. Think: what
+                makes this sound in real life?
+              </div>
+              <div class="tip">
+                <strong>Signal Chain Thinking</strong>
+                Source → Modulation → Filtering → Envelope → Output. Understand
+                each stage's purpose.
+              </div>
+              <div class="tip">
+                <strong>Start Simple</strong>
+                Begin with basic waveforms. Add complexity incrementally. Test
+                at each stage.
+              </div>
+              <div class="tip">
+                <strong>Use Your Ears</strong>
+                Theory guides, but your ears decide. Tune parameters by
+                listening, not just math.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="
+          text-align: center;
+          margin-top: 20px;
+          color: #666;
+          font-size: 11px;
+        "
+      >
+        Press ⌘/ to toggle DSP • Edit mode (⌘E) to build • Run mode (⌘E) to play
+      </div>
+    </div>
+
+    <script>
+      // Collapse/Expand functionality
+      document.querySelectorAll(".section h2").forEach((header) => {
+        header.addEventListener("click", function (e) {
+          // Only toggle if not dragging
+          if (!this.closest(".section").classList.contains("dragging")) {
+            this.classList.toggle("collapsed");
+            const content = this.nextElementSibling;
+            content.classList.toggle("expanded");
+          }
+        });
+      });
+
+      // Drag and drop functionality
+      let draggedElement = null;
+      let placeholder = null;
+
+      document.querySelectorAll(".section").forEach((section) => {
+        section.addEventListener("dragstart", function (e) {
+          draggedElement = this;
+          this.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/html", this.innerHTML);
+        });
+
+        section.addEventListener("dragend", function (e) {
+          this.classList.remove("dragging");
+          draggedElement = null;
+
+          // Remove all drag-over classes
+          document.querySelectorAll(".drag-over-item").forEach((el) => {
+            el.classList.remove("drag-over-item");
+          });
+          document.querySelectorAll(".drag-over").forEach((el) => {
+            el.classList.remove("drag-over");
+          });
+        });
+
+        section.addEventListener("dragover", function (e) {
+          e.preventDefault();
+          if (draggedElement && draggedElement !== this) {
+            const rect = this.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+
+            // Remove previous drag-over-item class
+            document.querySelectorAll(".drag-over-item").forEach((el) => {
+              el.classList.remove("drag-over-item");
+            });
+
+            if (e.clientY < midpoint) {
+              this.classList.add("drag-over-item");
+            }
+          }
+          return false;
+        });
+
+        section.addEventListener("dragleave", function (e) {
+          this.classList.remove("drag-over-item");
+        });
+
+        section.addEventListener("drop", function (e) {
+          e.stopPropagation();
+          e.preventDefault();
+
+          if (draggedElement && draggedElement !== this) {
+            const rect = this.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            const parent = this.parentNode;
+
+            if (e.clientY < midpoint) {
+              parent.insertBefore(draggedElement, this);
+            } else {
+              parent.insertBefore(draggedElement, this.nextSibling);
+            }
+          }
+
+          this.classList.remove("drag-over-item");
+          return false;
+        });
+      });
+
+      // Column drag over
+      document.querySelectorAll(".column").forEach((column) => {
+        column.addEventListener("dragover", function (e) {
+          e.preventDefault();
+          if (draggedElement) {
+            this.classList.add("drag-over");
+          }
+          return false;
+        });
+
+        column.addEventListener("dragleave", function (e) {
+          // Only remove if we're leaving the column itself, not a child
+          if (e.target === this) {
+            this.classList.remove("drag-over");
+          }
+        });
+
+        column.addEventListener("drop", function (e) {
+          e.stopPropagation();
+          e.preventDefault();
+
+          if (draggedElement) {
+            // If dropping on empty space in column, append to end
+            if (e.target === this || e.target.classList.contains("column")) {
+              this.appendChild(draggedElement);
+            }
+          }
+
+          this.classList.remove("drag-over");
+          return false;
+        });
+      });
+    </script>
+  </body>
+</html>

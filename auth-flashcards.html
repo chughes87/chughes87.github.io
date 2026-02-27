@@ -1,0 +1,558 @@
+---
+layout: none
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Authorization Models Flashcards</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0f1117; }
+    button:focus { outline: 2px solid rgba(255,255,255,0.3); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useCallback } = React;
+
+    const CARDS = [
+      {
+        id: "rbac",
+        title: "RBAC",
+        subtitle: "Role-Based Access Control",
+        color: "#1a5276",
+        accent: "#2e86c1",
+        oneLiner: "Users \u2192 Roles \u2192 Permissions",
+        example: 'user "alice" has role "editor" \u2192 can edit documents',
+        pros: [
+          "Simple to understand and implement",
+          "Easy to audit \u2014 just check role assignments",
+          "Maps naturally to org charts & job functions",
+          "Well-established (NIST standard since 2004)",
+          "Low overhead for small-to-medium systems",
+        ],
+        cons: [
+          "Role explosion \u2014 too many roles as complexity grows",
+          "No context awareness (time, location, device)",
+          "Coarse-grained \u2014 hard to express ownership or relationships",
+          "Static \u2014 can't adapt to changing conditions at runtime",
+          "Difficult to model cross-org sharing",
+        ],
+        when: "Stable orgs with clear job functions and predictable access patterns",
+      },
+      {
+        id: "abac",
+        title: "ABAC",
+        subtitle: "Attribute-Based Access Control",
+        color: "#6c3483",
+        accent: "#a569bd",
+        oneLiner: "Policies evaluate attributes of user, resource, environment",
+        example:
+          'if user.dept == "eng" AND resource.classification == "internal" AND time.isBusinessHours \u2192 allow',
+        pros: [
+          "Extremely fine-grained and flexible",
+          "Context-aware (time, location, device, risk score)",
+          "No role explosion \u2014 policies scale with attributes",
+          "Dynamic \u2014 evaluates conditions at request time",
+          "Can express complex business rules",
+        ],
+        cons: [
+          "Hard to implement and debug",
+          'Difficult to audit \u2014 "who can access what?" is hard to answer',
+          "Attribute engineering is complex and error-prone",
+          "Higher latency \u2014 more data needed per decision",
+          "Recovering from bad implementation is painful",
+        ],
+        when: "Complex, dynamic environments where context matters (geo-distributed, regulated industries)",
+      },
+      {
+        id: "rebac",
+        title: "ReBAC",
+        subtitle: "Relationship-Based Access Control",
+        color: "#0e6655",
+        accent: "#1abc9c",
+        oneLiner: "Access based on relationships between entities in a graph",
+        example:
+          "user:alice is viewer of doc:budget \u2192 alice can view doc:budget (and inherits from folder)",
+        pros: [
+          "Models real-world hierarchies naturally (folders \u2192 docs)",
+          "Supports inheritance \u2014 folder access flows to children",
+          "Handles ownership, sharing, groups elegantly",
+          'Enables reverse lookups: "who can access this resource?"',
+          "Scales to billions of relationships (Zanzibar)",
+        ],
+        cons: [
+          "Complex infrastructure \u2014 requires a graph-based system",
+          "Harder to reason about than flat roles",
+          "No native support for environmental attributes",
+          "Significant implementation investment",
+          "Younger ecosystem, fewer mature tools",
+        ],
+        when: "Collaborative apps with sharing/nesting (Google Docs, Notion, GitHub)",
+      },
+      {
+        id: "pbac",
+        title: "PBAC",
+        subtitle: "Policy-Based Access Control",
+        color: "#935116",
+        accent: "#d68910",
+        oneLiner: "Externalized policies as versioned, auditable artifacts",
+        example:
+          'policy: { conditions: { role: "manager", maxAmount: 50000 } } \u2192 allow edit invoice',
+        pros: [
+          "Policies are code \u2014 versioned, tested, reviewed",
+          "Decoupled from application logic",
+          "Single source of truth for authorization",
+          "Supports RBAC + ABAC + ReBAC patterns",
+          "Auditable and analyzable",
+        ],
+        cons: [
+          "Teams must learn a new mental model & policy language",
+          "Operational overhead \u2014 policy engine must be deployed/scaled",
+          "Premature adoption is architectural debt",
+          "Debugging policy interactions can be opaque",
+          "Requires organizational buy-in",
+        ],
+        when: "Large systems that can't tolerate fragmented auth logic (OPA/Rego, AWS Cedar)",
+      },
+      {
+        id: "acl",
+        title: "ACL",
+        subtitle: "Access Control Lists",
+        color: "#7b241c",
+        accent: "#cb4335",
+        oneLiner: "Each resource has a list of who can do what",
+        example: "doc:budget \u2192 [(alice, read), (bob, write), (carol, admin)]",
+        pros: [
+          "Simplest model \u2014 easy to understand",
+          "Direct per-resource control",
+          "No abstraction layers needed",
+          "Works well for small systems / file systems",
+          "Immediate \u2014 changes take effect instantly",
+        ],
+        cons: [
+          "Doesn't scale \u2014 managing lists per resource is O(n\u00d7m)",
+          "No inheritance or hierarchy",
+          'Hard to answer "what can this user access?"',
+          "Inconsistent policies across resources",
+          "No dynamic or contextual evaluation",
+        ],
+        when: "Small systems, file systems, or as the storage layer underneath RBAC/ReBAC",
+      },
+      {
+        id: "compare",
+        title: "QUICK COMPARE",
+        subtitle: "When to pick what",
+        color: "#2c3e50",
+        accent: "#5d6d7e",
+        oneLiner: "Match the model to your problem",
+        example: "Many real systems combine models: RBAC baseline + ABAC for context + ReBAC for sharing",
+        pros: [
+          "RBAC: 10-person startup with clear roles",
+          "ABAC: Global bank with regulatory requirements",
+          "ReBAC: Notion/Google Docs \u2014 sharing & nesting",
+          "PBAC: Microservices needing centralized policy",
+          "ACL: Simple file server or prototype",
+        ],
+        cons: [
+          "RBAC alone \u2192 role explosion at scale",
+          "ABAC alone \u2192 impossible to audit",
+          "ReBAC alone \u2192 no env context (time/location)",
+          "PBAC alone \u2192 over-investment for small teams",
+          "ACL alone \u2192 unmanageable past ~100 resources",
+        ],
+        when: "Hybrid approaches win. Notion likely uses ReBAC (page hierarchy) + RBAC (workspace roles) + per-page ACLs",
+      },
+    ];
+
+    const SIDES = ["oneLiner", "pros", "cons", "when"];
+    const SIDE_LABELS = {
+      oneLiner: "CONCEPT",
+      pros: "PROS",
+      cons: "CONS",
+      when: "BEST FOR",
+    };
+
+    function AuthFlashcards() {
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [sideIndex, setSideIndex] = useState(0);
+      const [flipping, setFlipping] = useState(false);
+      const [direction, setDirection] = useState(null);
+
+      const card = CARDS[currentIndex];
+
+      const flipTo = useCallback(
+        (newSide) => {
+          if (flipping || newSide === sideIndex) return;
+          setFlipping(true);
+          setTimeout(() => {
+            setSideIndex(newSide);
+            setFlipping(false);
+          }, 150);
+        },
+        [flipping, sideIndex]
+      );
+
+      const nextCard = useCallback(() => {
+        if (flipping) return;
+        setDirection("left");
+        setFlipping(true);
+        setTimeout(() => {
+          setCurrentIndex((i) => (i + 1) % CARDS.length);
+          setSideIndex(0);
+          setDirection(null);
+          setFlipping(false);
+        }, 200);
+      }, [flipping]);
+
+      const prevCard = useCallback(() => {
+        if (flipping) return;
+        setDirection("right");
+        setFlipping(true);
+        setTimeout(() => {
+          setCurrentIndex((i) => (i - 1 + CARDS.length) % CARDS.length);
+          setSideIndex(0);
+          setDirection(null);
+          setFlipping(false);
+        }, 200);
+      }, [flipping]);
+
+      const currentSide = SIDES[sideIndex];
+
+      const renderContent = () => {
+        if (currentSide === "oneLiner") {
+          return (
+            <div style={{ textAlign: "center", padding: "20px 0" }}>
+              <div
+                style={{
+                  fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace",
+                  fontSize: "15px",
+                  lineHeight: "1.7",
+                  color: "#e0e0e0",
+                  background: "rgba(0,0,0,0.3)",
+                  borderRadius: "8px",
+                  padding: "16px 20px",
+                  marginBottom: "24px",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                {card.example}
+              </div>
+              <div
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  color: "#fff",
+                  lineHeight: 1.5,
+                  fontFamily: "'Georgia', 'Times New Roman', serif",
+                  fontStyle: "italic",
+                }}
+              >
+                {card.oneLiner}
+              </div>
+            </div>
+          );
+        }
+
+        if (currentSide === "when") {
+          return (
+            <div style={{ textAlign: "center", padding: "30px 0" }}>
+              <div
+                style={{
+                  fontSize: "18px",
+                  color: "#fff",
+                  lineHeight: 1.6,
+                  fontFamily: "'Georgia', serif",
+                }}
+              >
+                {card.when}
+              </div>
+            </div>
+          );
+        }
+
+        const items = card[currentSide];
+        const isPros = currentSide === "pros";
+        return (
+          <div style={{ padding: "8px 0" }}>
+            {items.map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "10px",
+                  marginBottom: "12px",
+                  fontSize: "14px",
+                  lineHeight: "1.5",
+                  color: "#e8e8e8",
+                }}
+              >
+                <span
+                  style={{
+                    flexShrink: 0,
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    background: isPros
+                      ? "rgba(46, 204, 113, 0.2)"
+                      : "rgba(231, 76, 60, 0.2)",
+                    color: isPros ? "#2ecc71" : "#e74c3c",
+                    marginTop: "1px",
+                  }}
+                >
+                  {isPros ? "\u2713" : "\u2717"}
+                </span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        );
+      };
+
+      return (
+        <div
+          style={{
+            minHeight: "100vh",
+            background: "#0f1117",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            fontFamily:
+              "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif",
+          }}
+        >
+          <div
+            style={{
+              color: "#6b7280",
+              fontSize: "11px",
+              textTransform: "uppercase",
+              letterSpacing: "3px",
+              marginBottom: "24px",
+              fontWeight: 600,
+            }}
+          >
+            Authorization Models &mdash; {currentIndex + 1} / {CARDS.length}
+          </div>
+
+          {/* Card */}
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "480px",
+              minHeight: "420px",
+              background: `linear-gradient(145deg, ${card.color}, ${card.color}dd)`,
+              borderRadius: "16px",
+              padding: "32px 28px",
+              position: "relative",
+              overflow: "hidden",
+              opacity: flipping ? 0.6 : 1,
+              transform: flipping
+                ? direction === "left"
+                  ? "translateX(-20px)"
+                  : direction === "right"
+                  ? "translateX(20px)"
+                  : "scale(0.97)"
+                : "none",
+              transition: "all 0.15s ease",
+              boxShadow: `0 4px 40px ${card.color}44, 0 0 0 1px rgba(255,255,255,0.06) inset`,
+            }}
+          >
+            {/* Background decoration */}
+            <div
+              style={{
+                position: "absolute",
+                top: "-40px",
+                right: "-40px",
+                width: "180px",
+                height: "180px",
+                borderRadius: "50%",
+                background: `${card.accent}15`,
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Header */}
+            <div style={{ marginBottom: "20px", position: "relative" }}>
+              <div
+                style={{
+                  fontSize: "32px",
+                  fontWeight: 800,
+                  color: "#fff",
+                  letterSpacing: "-0.5px",
+                  lineHeight: 1.1,
+                }}
+              >
+                {card.title}
+              </div>
+              <div
+                style={{
+                  fontSize: "13px",
+                  color: "rgba(255,255,255,0.5)",
+                  marginTop: "6px",
+                  fontWeight: 500,
+                }}
+              >
+                {card.subtitle}
+              </div>
+            </div>
+
+            {/* Side label */}
+            <div
+              style={{
+                display: "inline-block",
+                padding: "4px 12px",
+                borderRadius: "100px",
+                background: "rgba(255,255,255,0.1)",
+                color: "rgba(255,255,255,0.7)",
+                fontSize: "11px",
+                fontWeight: 700,
+                letterSpacing: "1.5px",
+                marginBottom: "16px",
+              }}
+            >
+              {SIDE_LABELS[currentSide]}
+            </div>
+
+            {/* Content */}
+            <div style={{ position: "relative" }}>{renderContent()}</div>
+          </div>
+
+          {/* Side toggles */}
+          <div
+            style={{
+              display: "flex",
+              gap: "6px",
+              marginTop: "20px",
+              marginBottom: "16px",
+            }}
+          >
+            {SIDES.map((side, i) => (
+              <button
+                key={side}
+                onClick={() => flipTo(i)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "100px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  letterSpacing: "0.5px",
+                  transition: "all 0.15s ease",
+                  background:
+                    i === sideIndex ? card.accent : "rgba(255,255,255,0.06)",
+                  color: i === sideIndex ? "#fff" : "#6b7280",
+                }}
+              >
+                {SIDE_LABELS[side]}
+              </button>
+            ))}
+          </div>
+
+          {/* Navigation */}
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <button
+              onClick={prevCard}
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.04)",
+                color: "#9ca3af",
+                fontSize: "18px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.15s",
+              }}
+            >
+              &larr;
+            </button>
+
+            <div style={{ display: "flex", gap: "6px" }}>
+              {CARDS.map((c, i) => (
+                <div
+                  key={c.id}
+                  onClick={() => {
+                    if (i !== currentIndex) {
+                      setDirection(i > currentIndex ? "left" : "right");
+                      setFlipping(true);
+                      setTimeout(() => {
+                        setCurrentIndex(i);
+                        setSideIndex(0);
+                        setDirection(null);
+                        setFlipping(false);
+                      }, 200);
+                    }
+                  }}
+                  style={{
+                    width: i === currentIndex ? "24px" : "8px",
+                    height: "8px",
+                    borderRadius: "100px",
+                    background:
+                      i === currentIndex ? card.accent : "rgba(255,255,255,0.15)",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={nextCard}
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.04)",
+                color: "#9ca3af",
+                fontSize: "18px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.15s",
+              }}
+            >
+              &rarr;
+            </button>
+          </div>
+
+          <div
+            style={{
+              marginTop: "20px",
+              color: "#4b5563",
+              fontSize: "11px",
+              textAlign: "center",
+            }}
+          >
+            Tap CONCEPT / PROS / CONS / BEST FOR to flip &bull; arrows to switch cards
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<AuthFlashcards />);
+  </script>
+</body>
+</html>

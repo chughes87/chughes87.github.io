@@ -311,8 +311,19 @@ layout: none
       const [activeCategory, setActiveCategory] = useState(null);
       const [currentIndex, setCurrentIndex] = useState(0);
       const [flipped, setFlipped] = useState(false);
-      const [known, setKnown] = useState(new Set());
+      const [known, setKnown] = useState(() => {
+        try {
+          const saved = localStorage.getItem("napkin-math-known");
+          return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch { return new Set(); }
+      });
       const [mode, setMode] = useState("browse"); // browse | study | review
+
+      useEffect(() => {
+        try {
+          localStorage.setItem("napkin-math-known", JSON.stringify([...known]));
+        } catch {}
+      }, [known]);
 
       const filtered = activeCategory
         ? cards.filter((c) => c.cat === activeCategory)

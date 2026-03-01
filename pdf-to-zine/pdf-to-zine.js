@@ -36,46 +36,42 @@ async function convertToZine(pdfData) {
   // Load the input PDF document
   const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
   const blank = await pdfjsLib.getDocument({ data: dfData }).promise;
-  const blankPage = blank.getPage(1);
+  const blankPage = await blank.getPage(1);
   // Create a new empty PDF document
   const newPdf = new jspdf.jsPDF();
   const newWidth = newPdf.internal.pageSize.height * 0.5;
   const newHeight = newPdf.internal.pageSize.width;
   const order = generateOrder(pdf.numPages);
 
-  // Split the input PDF pages into two-page spreads
-  const promises = order.map(async ([page1Index, page2Index]) => {
+  // Process pages sequentially to preserve order
+  for (let idx = 0; idx < order.length; idx++) {
+    const [page1Index, page2Index] = order[idx];
+    if (idx > 0) newPdf.addPage();
+
     const page1 =
-      page1Index >= pdf.numPages
+      page1Index > pdf.numPages
         ? await blankPage
         : await pdf.getPage(page1Index);
     const page2 =
-      page2Index >= pdf.numPages
+      page2Index > pdf.numPages
         ? await blankPage
         : await pdf.getPage(page2Index);
-    // Merge the two pages into a new page in the new PDF document
+
     const canvas1 = document.createElement("canvas");
     const canvas2 = document.createElement("canvas");
-    const viewport1 = page1.getViewport({ scale: 1 });
-    const viewport2 = page2.getViewport({ scale: 1 });
+    const viewport1 = page1.getViewport({ scale: 2 });
+    const viewport2 = page2.getViewport({ scale: 2 });
     canvas1.height = viewport1.height;
     canvas1.width = viewport1.width;
     canvas2.height = viewport2.height;
     canvas2.width = viewport2.width;
-    const renderContext1 = {
-      canvasContext: canvas1.getContext("2d"),
-      viewport: viewport1,
-    };
-    const renderContext2 = {
-      canvasContext: canvas2.getContext("2d"),
-      viewport: viewport2,
-    };
+
     await Promise.all([
-      page1.render(renderContext1).promise,
-      page2.render(renderContext2).promise,
+      page1.render({ canvasContext: canvas1.getContext("2d"), viewport: viewport1 }).promise,
+      page2.render({ canvasContext: canvas2.getContext("2d"), viewport: viewport2 }).promise,
     ]);
 
-    await newPdf.addImage(
+    newPdf.addImage(
       canvas1.toDataURL("image/jpeg"),
       "JPEG",
       0,
@@ -86,7 +82,7 @@ async function convertToZine(pdfData) {
       null,
       -90
     );
-    await newPdf.addImage(
+    newPdf.addImage(
       canvas2.toDataURL("image/jpeg"),
       "JPEG",
       0,
@@ -97,10 +93,7 @@ async function convertToZine(pdfData) {
       null,
       -90
     );
-    newPdf.addPage();
-  });
-
-  await Promise.all(promises);
+  }
 
   downloadPDF(newPdf);
 }

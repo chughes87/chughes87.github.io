@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PostgreSQL Flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f0;
+    --surface: #fff;
+    --surface2: #eeeee8;
+    --border: rgba(0,0,0,0.1);
+    --border-hover: rgba(0,0,0,0.2);
+    --text: #1a1a1a;
+    --text-muted: #666;
+    --text-dim: #999;
+    --code-text: #4a4640;
+    --accent: #336791;
+    --accent-bg: rgba(51,103,145,0.1);
+    --cat1: #336791;
+    --cat1-bg: rgba(51,103,145,0.1);
+    --cat2: #2a8a5a;
+    --cat2-bg: rgba(42,138,90,0.1);
+    --cat3: #9b4dca;
+    --cat3-bg: rgba(155,77,202,0.1);
+    --cat4: #c8650a;
+    --cat4-bg: rgba(200,101,10,0.1);
+    --cat5: #cc342d;
+    --cat5-bg: rgba(204,52,45,0.1);
+    --good: #3a8a5a;
+    --good-bg: rgba(58,138,90,0.1);
+    --again: #cc342d;
+    --again-bg: rgba(204,52,45,0.1);
+    --radius: 12px;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  [data-theme="dark"] {
+    --bg: #0e0e10;
+    --surface: #18181c;
+    --surface2: #22222a;
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.16);
+    --text: #f0eee8;
+    --text-muted: #888;
+    --text-dim: #555;
+    --code-text: #c9c5b8;
+    --cat1: #5b9bd5;
+    --cat1-bg: rgba(91,155,213,0.12);
+    --cat2: #4aae6e;
+    --cat2-bg: rgba(74,174,110,0.12);
+    --cat3: #c97fd4;
+    --cat3-bg: rgba(201,127,212,0.12);
+    --cat4: #e8a84a;
+    --cat4-bg: rgba(232,168,74,0.12);
+    --cat5: #e85d4a;
+    --cat5-bg: rgba(232,93,74,0.12);
+    --good: #4aae6e;
+    --good-bg: rgba(74,174,110,0.12);
+    --again: #e85d4a;
+    --again-bg: rgba(232,93,74,0.12);
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  header h1 {
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  header h1 span { color: var(--cat1); }
+
+  header p {
+    margin-top: 0.4rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .wrapper { width: 100%; max-width: 640px; }
+
+  /* Progress */
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+  .progress-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--cat1);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .progress-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  .tab {
+    padding: 5px 13px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: var(--mono);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab:hover { border-color: var(--border-hover); color: var(--text); }
+  .tab.active-Indexes     { background: var(--cat1-bg); color: var(--cat1); border-color: var(--cat1); }
+  .tab.active-Queries      { background: var(--cat2-bg); color: var(--cat2); border-color: var(--cat2); }
+  .tab.active-Internals    { background: var(--cat3-bg); color: var(--cat3); border-color: var(--cat3); }
+  .tab.active-Performance  { background: var(--cat4-bg); color: var(--cat4); border-color: var(--cat4); }
+  .tab.active-Data-Types   { background: var(--cat5-bg); color: var(--cat5); border-color: var(--cat5); }
+  .tab.active-All          { background: rgba(240,238,232,0.08); color: var(--text); border-color: rgba(240,238,232,0.3); }
+
+  /* Card */
+  .card-scene {
+    perspective: 1000px;
+    height: 280px;
+    margin-bottom: 1.25rem;
+    cursor: pointer;
+  }
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
+  }
+  .card-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+  }
+  .card-back {
+    transform: rotateY(180deg);
+    justify-content: flex-start;
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 1.5rem;
+    gap: 0;
+  }
+
+  .card-hint {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .card-term {
+    font-size: clamp(1.1rem, 3vw, 1.5rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-align: center;
+    line-height: 1.3;
+    color: var(--text);
+  }
+  .badge {
+    margin-top: 1rem;
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .badge-Indexes     { color: var(--cat1); background: var(--cat1-bg); border-color: var(--cat1); }
+  .badge-Queries     { color: var(--cat2); background: var(--cat2-bg); border-color: var(--cat2); }
+  .badge-Internals   { color: var(--cat3); background: var(--cat3-bg); border-color: var(--cat3); }
+  .badge-Performance { color: var(--cat4); background: var(--cat4-bg); border-color: var(--cat4); }
+  .badge-Data-Types  { color: var(--cat5); background: var(--cat5-bg); border-color: var(--cat5); }
+
+  .back-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .back-desc {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+  .back-code {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--code-text);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* Hint & buttons */
+  .tap-hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    margin-bottom: 1rem;
+    height: 18px;
+  }
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  .btn {
+    padding: 9px 22px;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+  }
+  .btn:hover { background: var(--surface2); color: var(--text); }
+  .btn-again { border-color: rgba(204,52,45,0.4); color: var(--again); }
+  .btn-again:hover { background: var(--again-bg); }
+  .btn-gotit { border-color: rgba(58,138,90,0.4); color: var(--good); }
+  .btn-gotit:hover { background: var(--good-bg); }
+  .btn-reset { font-size: 13px; }
+
+  /* Stats */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+  .stats span b { color: var(--text-muted); font-weight: 500; }
+
+  .done-msg {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--good);
+    text-align: center;
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+    z-index: 10;
+  }
+  .theme-toggle:hover {
+    border-color: var(--border-hover);
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme"></button>
+
+<header>
+  <h1>Post<span>gres</span>SQL Flashcards</h1>
+  <p id="cardCount"></p>
+</header>
+
+<div class="wrapper">
+  <div class="progress-row">
+    <div class="progress-track"><div class="progress-fill" id="prog"></div></div>
+    <div class="progress-label" id="prog-label">0 / 0</div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="card-scene" id="cardScene">
+    <div class="card-inner" id="cardInner">
+      <div class="card-face" id="cardFront">
+        <div class="card-hint">tap to reveal</div>
+        <div class="card-term" id="frontTerm"></div>
+        <div class="badge" id="frontBadge"></div>
+      </div>
+      <div class="card-face card-back" id="cardBack">
+        <div class="back-label">answer</div>
+        <div class="back-desc" id="backDesc"></div>
+        <div class="back-code" id="backCode"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tap-hint" id="tapHint">tap the card to flip</div>
+
+  <div class="btn-row" id="btnRow" style="display:none"></div>
+
+  <div class="stats">
+    <span><b id="sDone">0</b> done</span>
+    <span><b id="sGot">0</b> got it</span>
+    <span><b id="sLeft">0</b> left</span>
+  </div>
+</div>
+
+<script>
+// Theme toggle
+(function() {
+  const saved = localStorage.getItem('pg-flashcards-theme');
+  if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  const btn = document.getElementById('themeToggle');
+  function updateIcon() {
+    btn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+  }
+  updateIcon();
+  btn.addEventListener('click', function() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('pg-flashcards-theme', 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('pg-flashcards-theme', 'dark');
+    }
+    updateIcon();
+  });
+})();
+
+const ALL = [
+  // ── Indexes ──
+  {term:"B-tree index",cat:"Indexes",desc:"The default index type. Supports equality and range queries (<, <=, =, >=, >) and ORDER BY. Stores sorted key values in a balanced tree structure.",code:`CREATE INDEX idx_users_email\n  ON users (email);`},
+  {term:"Hash index",cat:"Indexes",desc:"Optimized for simple equality (=) lookups only. Smaller than B-tree for equality-only workloads. WAL-logged since Postgres 10.",code:`CREATE INDEX idx_sessions_token\n  ON sessions USING hash (token);`},
+  {term:"GIN index",cat:"Indexes",desc:"Generalized Inverted Index — maps each element/key to the rows containing it. Ideal for full-text search, JSONB, arrays, and any multi-valued column.",code:`CREATE INDEX idx_posts_tags\n  ON posts USING gin (tags);\n-- also: tsvector, jsonb_path_ops`},
+  {term:"GiST index",cat:"Indexes",desc:"Generalized Search Tree — supports geometric, range, and nearest-neighbor queries. Allows overlapping keys, unlike B-tree.",code:`CREATE INDEX idx_events_during\n  ON events USING gist (during);\n-- range type: tstzrange`},
+  {term:"BRIN index",cat:"Indexes",desc:"Block Range Index — stores min/max summaries per block range. Very small, ideal for naturally ordered data (timestamps, serial IDs).",code:`CREATE INDEX idx_logs_created\n  ON logs USING brin (created_at)\n  WITH (pages_per_range = 32);`},
+  {term:"SP-GiST index",cat:"Indexes",desc:"Space-Partitioned GiST — for data with natural clustering (IP addresses, phone numbers, geometric points). Uses non-balanced partitioned trees.",code:`CREATE INDEX idx_geo_point\n  ON places USING spgist (location);`},
+  {term:"partial index",cat:"Indexes",desc:"An index with a WHERE clause — only indexes rows matching the predicate. Smaller and faster when queries always filter on the same condition.",code:`CREATE INDEX idx_orders_pending\n  ON orders (created_at)\n  WHERE status = 'pending';`},
+  {term:"expression index",cat:"Indexes",desc:"Indexes the result of an expression or function rather than a plain column. The query must use the same expression to trigger an index scan.",code:`CREATE INDEX idx_users_lower_email\n  ON users (lower(email));`},
+  {term:"covering index (INCLUDE)",cat:"Indexes",desc:"Stores extra columns in the index leaf pages so the query can be answered from the index alone (index-only scan), without visiting the heap.",code:`CREATE INDEX idx_orders_cover\n  ON orders (user_id)\n  INCLUDE (total, status);`},
+  {term:"multicolumn index",cat:"Indexes",desc:"A single B-tree index on multiple columns. Useful when queries filter or sort on a known column combination. Leftmost prefix rule applies.",code:`CREATE INDEX idx_events_multi\n  ON events (org_id, created_at DESC);`},
+  {term:"unique index",cat:"Indexes",desc:"Enforces uniqueness on the indexed columns. Created implicitly by UNIQUE and PRIMARY KEY constraints. Can be partial for conditional uniqueness.",code:`CREATE UNIQUE INDEX idx_email_uniq\n  ON users (email)\n  WHERE deleted_at IS NULL;`},
+  {term:"CONCURRENTLY",cat:"Indexes",desc:"Builds an index without holding a lock that blocks writes. Takes longer and uses more resources, but avoids downtime on live tables.",code:`CREATE INDEX CONCURRENTLY idx_name\n  ON large_table (column);`},
+
+  // ── Queries ──
+  {term:"CTEs (WITH queries)",cat:"Queries",desc:"Common Table Expressions define named temporary result sets for a query. Recursive CTEs can traverse trees and graphs.",code:`WITH RECURSIVE tree AS (\n  SELECT id, parent_id, name\n  FROM categories WHERE parent_id IS NULL\n  UNION ALL\n  SELECT c.id, c.parent_id, c.name\n  FROM categories c\n  JOIN tree t ON c.parent_id = t.id\n)\nSELECT * FROM tree;`},
+  {term:"window functions",cat:"Queries",desc:"Compute a value across a set of rows related to the current row without collapsing them. Defined with OVER(PARTITION BY ... ORDER BY ...).",code:`SELECT name, department,\n  salary,\n  RANK() OVER (\n    PARTITION BY department\n    ORDER BY salary DESC\n  ) AS dept_rank\nFROM employees;`},
+  {term:"LATERAL join",cat:"Queries",desc:"Allows a subquery in FROM to reference columns from preceding tables — like a correlated subquery that returns multiple columns/rows.",code:`SELECT u.name, recent.*\nFROM users u,\nLATERAL (\n  SELECT * FROM orders\n  WHERE user_id = u.id\n  ORDER BY created_at DESC\n  LIMIT 3\n) recent;`},
+  {term:"DISTINCT ON",cat:"Queries",desc:"PostgreSQL extension that returns the first row for each distinct value of the specified expressions, controlled by ORDER BY.",code:`SELECT DISTINCT ON (user_id)\n  user_id, created_at, amount\nFROM orders\nORDER BY user_id, created_at DESC;`},
+  {term:"FILTER clause",cat:"Queries",desc:"Applies a WHERE condition to a single aggregate function without affecting others in the same query.",code:`SELECT\n  COUNT(*) AS total,\n  COUNT(*) FILTER (\n    WHERE status = 'active'\n  ) AS active\nFROM users;`},
+  {term:"UPSERT (ON CONFLICT)",cat:"Queries",desc:"INSERT with a conflict resolution strategy — either update the existing row or do nothing. Requires a unique constraint or index.",code:`INSERT INTO kv (key, value)\nVALUES ('hits', 1)\nON CONFLICT (key)\nDO UPDATE SET value = kv.value + 1;`},
+  {term:"RETURNING clause",cat:"Queries",desc:"Returns data from rows affected by INSERT, UPDATE, or DELETE — avoids a second query to fetch the result.",code:`UPDATE accounts\nSET balance = balance - 100\nWHERE id = 42\nRETURNING id, balance;`},
+  {term:"generate_series",cat:"Queries",desc:"Set-returning function that produces a sequence of values — integers, timestamps, etc. Great for filling gaps in time-series data.",code:`SELECT d::date, COALESCE(cnt, 0)\nFROM generate_series(\n  '2024-01-01', '2024-01-31',\n  '1 day'::interval\n) d\nLEFT JOIN daily_counts\n  ON day = d::date;`},
+  {term:"array_agg / string_agg",cat:"Queries",desc:"Aggregate functions that collect values into an array or a delimited string. Use ORDER BY inside for deterministic ordering.",code:`SELECT author_id,\n  array_agg(\n    title ORDER BY published_at\n  ) AS titles\nFROM books\nGROUP BY author_id;`},
+  {term:"EXISTS vs IN",cat:"Queries",desc:"EXISTS short-circuits on the first match and handles NULLs correctly. IN materializes the full subquery. Prefer EXISTS for correlated checks.",code:`-- prefer this:\nSELECT * FROM users u\nWHERE EXISTS (\n  SELECT 1 FROM orders o\n  WHERE o.user_id = u.id\n);`},
+  {term:"GROUPING SETS / CUBE / ROLLUP",cat:"Queries",desc:"Compute multiple levels of aggregation in a single query. ROLLUP gives hierarchical subtotals; CUBE gives all combinations.",code:`SELECT region, product,\n  SUM(revenue)\nFROM sales\nGROUP BY ROLLUP (region, product);`},
+
+  // ── Internals ──
+  {term:"MVCC",cat:"Internals",desc:"Multi-Version Concurrency Control — each transaction sees a snapshot of data. Writers never block readers. Old row versions are cleaned up by VACUUM.",code:`-- every row has hidden columns:\n-- xmin: txid that inserted it\n-- xmax: txid that deleted/updated it`},
+  {term:"WAL (Write-Ahead Log)",cat:"Internals",desc:"All changes are written to a sequential log before being applied to data files. Guarantees durability and enables replication and point-in-time recovery.",code:`-- key settings:\nwal_level = replica\nmax_wal_senders = 10\narchive_mode = on`},
+  {term:"VACUUM",cat:"Internals",desc:"Reclaims storage from dead tuples left by MVCC. VACUUM frees space for reuse; VACUUM FULL rewrites the table to reclaim disk space.",code:`VACUUM (VERBOSE) my_table;\nVACUUM FULL my_table;\n-- autovacuum runs automatically`},
+  {term:"TOAST",cat:"Internals",desc:"The Oversized Attribute Storage Technique — automatically compresses and/or moves large field values (>2KB) to a separate TOAST table.",code:`-- strategies per column:\n-- PLAIN:    no toast (fixed-length)\n-- EXTENDED: compress + out-of-line\n-- EXTERNAL: out-of-line, no compress\n-- MAIN:     compress, avoid out-of-line`},
+  {term:"transaction isolation levels",cat:"Internals",desc:"Read Committed (default): sees each statement's own snapshot. Repeatable Read: snapshot at first statement. Serializable: full serializability via SSI.",code:`BEGIN ISOLATION LEVEL\n  SERIALIZABLE;\n-- levels: READ COMMITTED,\n--   REPEATABLE READ, SERIALIZABLE`},
+  {term:"advisory locks",cat:"Internals",desc:"Application-defined locks that Postgres manages but doesn't enforce on data. Useful for coordinating processes outside normal row/table locking.",code:`-- session-level:\nSELECT pg_advisory_lock(42);\nSELECT pg_advisory_unlock(42);\n-- transaction-level:\nSELECT pg_advisory_xact_lock(42);`},
+  {term:"pg_stat_statements",cat:"Internals",desc:"Extension that tracks execution statistics for all normalized SQL statements — the most important tool for finding slow queries.",code:`SELECT query,\n  calls, mean_exec_time,\n  total_exec_time\nFROM pg_stat_statements\nORDER BY total_exec_time DESC\nLIMIT 10;`},
+  {term:"logical replication",cat:"Internals",desc:"Replicates data changes at the logical (row) level using publications and subscriptions. Allows selective table replication and cross-version upgrades.",code:`-- on publisher:\nCREATE PUBLICATION my_pub\n  FOR TABLE users, orders;\n-- on subscriber:\nCREATE SUBSCRIPTION my_sub\n  CONNECTION 'host=...'\n  PUBLICATION my_pub;`},
+  {term:"tablespaces",cat:"Internals",desc:"Allow you to define locations on disk where database objects are stored. Useful for placing frequently accessed tables on fast SSDs.",code:`CREATE TABLESPACE fast_ssd\n  LOCATION '/mnt/ssd/pg_data';\nCREATE TABLE hot_data (...)\n  TABLESPACE fast_ssd;`},
+  {term:"system catalogs",cat:"Internals",desc:"Internal tables (pg_class, pg_attribute, pg_index, etc.) that store metadata about all database objects. The information_schema is a SQL-standard view over them.",code:`SELECT relname, reltuples, relpages\nFROM pg_class\nWHERE relkind = 'r'\nORDER BY reltuples DESC;`},
+  {term:"row-level security (RLS)",cat:"Internals",desc:"Policies that filter which rows a user can see or modify, enforced transparently. Must be enabled per table with ALTER TABLE ... ENABLE ROW LEVEL SECURITY.",code:`ALTER TABLE documents\n  ENABLE ROW LEVEL SECURITY;\nCREATE POLICY tenant_iso\n  ON documents\n  USING (tenant_id = current_setting(\n    'app.tenant_id')::int);`},
+
+  // ── Performance ──
+  {term:"EXPLAIN ANALYZE",cat:"Performance",desc:"Runs the query and shows the actual execution plan with real timings and row counts. Add BUFFERS to see I/O. Never use on destructive queries without a transaction.",code:`EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)\nSELECT * FROM orders\nWHERE user_id = 42;`},
+  {term:"seq scan vs index scan",cat:"Performance",desc:"Seq scan reads every row — fast for small tables or low selectivity. Index scan uses an index — wins when selecting a small fraction of rows (typically <10-15%).",code:`-- force for testing:\nSET enable_seqscan = off;\n-- check: Seq Scan vs Index Scan\n-- in EXPLAIN output`},
+  {term:"bitmap index scan",cat:"Performance",desc:"Scans the index to build a bitmap of matching pages, then reads those pages. Efficient for medium selectivity or combining multiple indexes with AND/OR.",code:`-- appears in EXPLAIN as:\n-- Bitmap Heap Scan\n--   -> BitmapAnd / BitmapOr\n--     -> Bitmap Index Scan`},
+  {term:"index-only scan",cat:"Performance",desc:"Answers the query entirely from the index without visiting the table heap. Requires all needed columns in the index and a recently vacuumed visibility map.",code:`-- EXPLAIN shows:\n-- Index Only Scan using idx_name\n--   Heap Fetches: 0  <- ideal`},
+  {term:"connection pooling",cat:"Performance",desc:"Each Postgres connection consumes ~10MB RAM and a process. Use a pooler (PgBouncer, pgcat) in transaction mode to multiplex thousands of clients over fewer connections.",code:`-- pgbouncer.ini:\n[databases]\nmydb = host=localhost\n[pgbouncer]\npool_mode = transaction\nmax_client_conn = 1000\ndefault_pool_size = 20`},
+  {term:"partitioning",cat:"Performance",desc:"Splits a large table into smaller physical partitions by range, list, or hash. Enables partition pruning and easier data lifecycle management.",code:`CREATE TABLE events (\n  id bigint, created_at timestamptz,\n  data jsonb\n) PARTITION BY RANGE (created_at);\n\nCREATE TABLE events_2024_q1\n  PARTITION OF events\n  FOR VALUES FROM ('2024-01-01')\n  TO ('2024-04-01');`},
+  {term:"statistics target",cat:"Performance",desc:"Controls how many values the planner samples when computing column statistics. Increase for columns with skewed distributions to get better query plans.",code:`ALTER TABLE orders\n  ALTER COLUMN status\n  SET STATISTICS 1000;\nANALYZE orders;`},
+  {term:"work_mem",cat:"Performance",desc:"Memory allocated per sort/hash operation per query. Too low causes disk spills; too high risks OOM with many concurrent queries. Set per-session for big queries.",code:`-- global default:\nSET work_mem = '16MB';\n-- per query:\nSET LOCAL work_mem = '256MB';`},
+  {term:"HOT updates",cat:"Performance",desc:"Heap-Only Tuple updates — when an update doesn't change any indexed column and the new tuple fits on the same page, Postgres avoids updating the index entirely.",code:`-- check HOT ratio:\nSELECT n_tup_hot_upd, n_tup_upd\nFROM pg_stat_user_tables\nWHERE relname = 'my_table';`},
+  {term:"pg_stat_user_tables",cat:"Performance",desc:"Shows per-table stats: sequential vs index scans, rows fetched, inserts/updates/deletes, dead tuples, and last vacuum/analyze times.",code:`SELECT relname,\n  seq_scan, idx_scan,\n  n_live_tup, n_dead_tup,\n  last_autovacuum\nFROM pg_stat_user_tables\nORDER BY n_dead_tup DESC;`},
+
+  // ── Data Types ──
+  {term:"JSONB",cat:"Data Types",desc:"Binary JSON storage with indexing support. Supports containment (@>), existence (?), and path (->>, #>>) operators. Use GIN index for fast lookups.",code:`SELECT * FROM events\nWHERE payload @> '{\"type\": \"click\"}';\n\nCREATE INDEX idx_payload\n  ON events USING gin (payload);`},
+  {term:"arrays",cat:"Data Types",desc:"First-class array columns with operators for containment (@>), overlap (&&), and indexing. GIN indexes speed up element lookups.",code:`SELECT * FROM posts\nWHERE tags @> ARRAY['postgres'];\n\nSELECT unnest(tags) AS tag,\n  COUNT(*) FROM posts GROUP BY 1;`},
+  {term:"hstore",cat:"Data Types",desc:"Key-value store in a single column. Lighter than JSONB when you only need flat string-to-string pairs. Supports GIN/GiST indexing.",code:`SELECT settings->'timezone'\nFROM users\nWHERE settings ? 'timezone';`},
+  {term:"range types",cat:"Data Types",desc:"Represent a range of values (int4range, tstzrange, daterange, etc.) with built-in operators for overlap (&&), containment (@>), and adjacency (-|-).",code:`SELECT * FROM bookings\nWHERE during && tstzrange(\n  '2024-03-01', '2024-03-07'\n);\n-- exclude overlap constraint:\nEXCLUDE USING gist (room WITH =,\n  during WITH &&)`},
+  {term:"UUID",cat:"Data Types",desc:"128-bit universally unique identifier. Use gen_random_uuid() (built-in since PG 13) for random UUIDs. Good for distributed IDs but can fragment B-tree indexes.",code:`CREATE TABLE items (\n  id uuid DEFAULT gen_random_uuid()\n    PRIMARY KEY,\n  name text NOT NULL\n);`},
+  {term:"enum types",cat:"Data Types",desc:"User-defined types with a fixed, ordered set of values. Stored as 4 bytes internally. Adding values is easy; removing requires recreating the type.",code:`CREATE TYPE status AS ENUM (\n  'draft', 'published', 'archived'\n);\nALTER TYPE status\n  ADD VALUE 'reviewing'\n  BEFORE 'published';`},
+  {term:"tsvector / tsquery",cat:"Data Types",desc:"Built-in full-text search types. tsvector stores normalized lexemes with positions; tsquery represents a search expression. Use GIN index for performance.",code:`ALTER TABLE posts ADD COLUMN\n  search tsvector\n  GENERATED ALWAYS AS (\n    to_tsvector('english',\n      title || ' ' || body)\n  ) STORED;\nCREATE INDEX idx_search\n  ON posts USING gin (search);`},
+  {term:"CIDR / INET / macaddr",cat:"Data Types",desc:"Network address types with built-in operators for containment (>>), subnet masking, and ordering. Much more efficient than storing IPs as text.",code:`SELECT * FROM access_log\nWHERE client_ip <<\n  '192.168.1.0/24'::cidr;`},
+  {term:"interval",cat:"Data Types",desc:"Represents a duration of time. Supports arithmetic with timestamps and other intervals. Can be specified in multiple units.",code:`SELECT now() - '30 days'::interval;\nSELECT age('2024-06-01', '2024-01-01');\n-- result: 5 mons`},
+  {term:"domain types",cat:"Data Types",desc:"Named types built on existing types with added constraints. Useful for enforcing validation rules at the type level across multiple tables.",code:`CREATE DOMAIN email AS text\n  CHECK (\n    VALUE ~ '^[^@]+@[^@]+\\.[^@]+$'\n  );\nCREATE TABLE users (\n  contact email NOT NULL\n);`},
+];
+
+document.getElementById('cardCount').textContent =
+  ALL.length + ' cards \u00B7 Indexes \u00B7 Queries \u00B7 Internals \u00B7 Performance \u00B7 Data Types';
+
+const STORAGE_KEY = 'pg-flashcards-gotit';
+function loadGotIt() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch { return new Set(); }
+}
+function saveGotIt() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...gotIt]));
+}
+
+let category = "All";
+let deck = [];
+let gotIt = loadGotIt();
+let current = 0;
+let flipped = false;
+
+function catKey(c) { return c.replace(/\s+/g, '-'); }
+
+function categories() {
+  return ["All", ...new Set(ALL.map(c => c.cat))];
+}
+
+function buildDeck() {
+  deck = (category === "All" ? ALL : ALL.filter(c => c.cat === category))
+    .filter(c => !gotIt.has(c.term))
+    .sort(() => Math.random() - 0.5);
+  current = 0;
+}
+
+function renderTabs() {
+  document.getElementById("tabs").innerHTML = categories().map(c => {
+    const active = c === category ? ` active-${catKey(c)}` : "";
+    return `<button class="tab${active}" onclick="setCategory('${c.replace(/'/g,"\\'")}')">
+      ${c}
+    </button>`;
+  }).join("");
+}
+
+function setCategory(c) {
+  category = c; buildDeck(); renderTabs(); showCard();
+}
+
+function updateStats() {
+  const pool = category === "All" ? ALL : ALL.filter(c => c.cat === category);
+  const relevant = [...gotIt].filter(t => pool.some(c => c.term === t)).length;
+  const pct = pool.length ? (relevant / pool.length) * 100 : 0;
+  document.getElementById("prog").style.width = pct + "%";
+  document.getElementById("prog-label").textContent = relevant + " / " + pool.length;
+  document.getElementById("sDone").textContent = relevant;
+  document.getElementById("sGot").textContent = relevant;
+  document.getElementById("sLeft").textContent = deck.length;
+}
+
+function showCard() {
+  flipped = false;
+  document.getElementById("cardInner").classList.remove("flipped");
+  document.getElementById("tapHint").textContent = "tap the card to flip";
+  document.getElementById("btnRow").style.display = "none";
+  document.getElementById("cardScene").onclick = flipCard;
+  updateStats();
+
+  if (deck.length === 0) {
+    document.getElementById("frontTerm").innerHTML = `<span style="color:var(--good)">all done!</span>`;
+    document.getElementById("frontBadge").style.display = "none";
+    document.getElementById("tapHint").textContent = "";
+    document.getElementById("cardScene").onclick = null;
+    document.getElementById("btnRow").innerHTML = `<button class="btn btn-reset" onclick="resetDeck()">\u21BA study again</button>`;
+    document.getElementById("btnRow").style.display = "flex";
+    return;
+  }
+
+  const card = deck[current % deck.length];
+  document.getElementById("frontTerm").textContent = card.term;
+  const badge = document.getElementById("frontBadge");
+  badge.textContent = card.cat;
+  badge.className = "badge badge-" + catKey(card.cat);
+  badge.style.display = "";
+  document.getElementById("backDesc").textContent = card.desc;
+  document.getElementById("backCode").textContent = card.code;
+}
+
+function flipCard() {
+  if (flipped) return;
+  flipped = true;
+  document.getElementById("cardInner").classList.add("flipped");
+  document.getElementById("tapHint").textContent = "";
+  document.getElementById("btnRow").innerHTML =
+    `<button class="btn btn-again" onclick="mark(false)">study again</button>
+     <button class="btn btn-gotit" onclick="mark(true)">got it</button>`;
+  document.getElementById("btnRow").style.display = "flex";
+}
+
+function mark(known) {
+  const card = deck[current % deck.length];
+  if (known) {
+    gotIt.add(card.term);
+    saveGotIt();
+    deck.splice(current % deck.length, 1);
+  } else {
+    deck.splice(current % deck.length, 1);
+    deck.push(card);
+    current = current % Math.max(deck.length, 1);
+  }
+  showCard();
+}
+
+function resetDeck() { gotIt.clear(); saveGotIt(); buildDeck(); showCard(); }
+
+renderTabs(); buildDeck(); showCard();
+</script>
+</body>
+</html>

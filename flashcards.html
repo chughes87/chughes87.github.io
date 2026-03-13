@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #f5f5f0;
+    color: #1a1a1a;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1rem 4rem;
+  }
+  h1 {
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
+  }
+  .subtitle {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 2.5rem;
+  }
+  .grid {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  a.deck {
+    display: block;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-left: 4px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px 22px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  a.deck:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  }
+  .deck-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+  }
+  .deck-meta {
+    font-size: 13px;
+    color: #888;
+    font-family: 'DM Mono', monospace;
+  }
+  .deck-cats {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .deck-cat {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    padding: 2px 10px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.04);
+    color: #666;
+  }
+  .back-link {
+    margin-top: 2rem;
+    font-size: 13px;
+    color: #999;
+    font-family: 'DM Mono', monospace;
+    text-decoration: none;
+  }
+  .back-link:hover { color: #1a1a1a; }
+</style>
+</head>
+<body>
+  <h1>Flashcards</h1>
+  <p class="subtitle">pick a deck to study</p>
+
+  <div class="grid">
+    <a class="deck" href="/ruby-flashcards.html" style="--accent: #cc342d;">
+      <div class="deck-title">Ruby & Rails</div>
+      <div class="deck-meta">57 cards</div>
+      <div class="deck-cats">
+        <span class="deck-cat">Ruby</span>
+        <span class="deck-cat">Rails</span>
+        <span class="deck-cat">Metaprogramming</span>
+        <span class="deck-cat">RSpec</span>
+        <span class="deck-cat">BG Jobs</span>
+      </div>
+    </a>
+
+    <a class="deck" href="/postgres-flashcards.html" style="--accent: #336791;">
+      <div class="deck-title">PostgreSQL</div>
+      <div class="deck-meta">54 cards</div>
+      <div class="deck-cats">
+        <span class="deck-cat">Indexes</span>
+        <span class="deck-cat">Queries</span>
+        <span class="deck-cat">Internals</span>
+        <span class="deck-cat">Performance</span>
+        <span class="deck-cat">Data Types</span>
+      </div>
+    </a>
+
+    <a class="deck" href="/napkin-math-flashcards.html" style="--accent: #e8590c;">
+      <div class="deck-title">Napkin Math</div>
+      <div class="deck-meta">system design estimation</div>
+      <div class="deck-cats">
+        <span class="deck-cat">Latency</span>
+        <span class="deck-cat">Throughput</span>
+        <span class="deck-cat">Storage</span>
+        <span class="deck-cat">Decisions</span>
+        <span class="deck-cat">Conversions</span>
+      </div>
+    </a>
+
+    <a class="deck" href="/auth-flashcards.html" style="--accent: #1a5276;">
+      <div class="deck-title">Authorization Models</div>
+      <div class="deck-meta">RBAC, ABAC, ReBAC, PBAC, ACL</div>
+      <div class="deck-cats">
+        <span class="deck-cat">RBAC</span>
+        <span class="deck-cat">ABAC</span>
+        <span class="deck-cat">ReBAC</span>
+        <span class="deck-cat">PBAC</span>
+        <span class="deck-cat">ACL</span>
+      </div>
+    </a>
+  </div>
+
+  <a class="back-link" href="/">&larr; home</a>
+</body>
+</html>

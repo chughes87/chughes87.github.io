@@ -84,6 +84,32 @@
     text-decoration: none;
   }
   .back-link:hover { color: #1a1a1a; }
+  .deck-progress {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .deck-progress-track {
+    flex: 1;
+    height: 3px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .deck-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .deck-progress-label {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: #999;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -91,7 +117,7 @@
   <p class="subtitle">pick a deck to study</p>
 
   <div class="grid">
-    <a class="deck" href="/ruby-flashcards.html" style="--accent: #cc342d;">
+    <a class="deck" href="/ruby-flashcards.html" style="--accent: #cc342d;" data-storage-key="ruby-flashcards-gotit" data-total="57">
       <div class="deck-title">Ruby & Rails</div>
       <div class="deck-meta">57 cards</div>
       <div class="deck-cats">
@@ -101,9 +127,13 @@
         <span class="deck-cat">RSpec</span>
         <span class="deck-cat">BG Jobs</span>
       </div>
+      <div class="deck-progress">
+        <div class="deck-progress-track"><div class="deck-progress-fill"></div></div>
+        <div class="deck-progress-label"></div>
+      </div>
     </a>
 
-    <a class="deck" href="/postgres-flashcards.html" style="--accent: #336791;">
+    <a class="deck" href="/postgres-flashcards.html" style="--accent: #336791;" data-storage-key="pg-flashcards-gotit" data-total="54">
       <div class="deck-title">PostgreSQL</div>
       <div class="deck-meta">54 cards</div>
       <div class="deck-cats">
@@ -113,9 +143,13 @@
         <span class="deck-cat">Performance</span>
         <span class="deck-cat">Data Types</span>
       </div>
+      <div class="deck-progress">
+        <div class="deck-progress-track"><div class="deck-progress-fill"></div></div>
+        <div class="deck-progress-label"></div>
+      </div>
     </a>
 
-    <a class="deck" href="/napkin-math-flashcards.html" style="--accent: #e8590c;">
+    <a class="deck" href="/napkin-math-flashcards.html" style="--accent: #e8590c;" data-storage-key="napkin-math-gotit" data-total="46">
       <div class="deck-title">Napkin Math</div>
       <div class="deck-meta">46 cards</div>
       <div class="deck-cats">
@@ -124,6 +158,10 @@
         <span class="deck-cat">Storage</span>
         <span class="deck-cat">Decisions</span>
         <span class="deck-cat">Conversions</span>
+      </div>
+      <div class="deck-progress">
+        <div class="deck-progress-track"><div class="deck-progress-fill"></div></div>
+        <div class="deck-progress-label"></div>
       </div>
     </a>
 
@@ -141,5 +179,22 @@
   </div>
 
   <a class="back-link" href="/">&larr; home</a>
+
+<script>
+document.querySelectorAll('.deck[data-storage-key]').forEach(function(deck) {
+  var key = deck.getAttribute('data-storage-key');
+  var total = parseInt(deck.getAttribute('data-total'), 10);
+  var done = 0;
+  try {
+    var saved = JSON.parse(localStorage.getItem(key));
+    if (Array.isArray(saved)) done = saved.length;
+  } catch(e) {}
+  var pct = total ? (done / total) * 100 : 0;
+  var fill = deck.querySelector('.deck-progress-fill');
+  var label = deck.querySelector('.deck-progress-label');
+  if (fill) fill.style.width = pct + '%';
+  if (label) label.textContent = done + ' / ' + total;
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruby & Rails Flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e10;
+    --surface: #18181c;
+    --surface2: #22222a;
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.16);
+    --text: #f0eee8;
+    --text-muted: #888;
+    --text-dim: #555;
+    --ruby: #e85d4a;
+    --ruby-bg: rgba(232,93,74,0.12);
+    --rails: #4aae6e;
+    --rails-bg: rgba(74,174,110,0.12);
+    --meta: #c97fd4;
+    --meta-bg: rgba(201,127,212,0.12);
+    --rspec: #e8a84a;
+    --rspec-bg: rgba(232,168,74,0.12);
+    --jobs: #4a9ae8;
+    --jobs-bg: rgba(74,154,232,0.12);
+    --radius: 12px;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  header h1 {
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  header h1 span { color: var(--ruby); }
+
+  header p {
+    margin-top: 0.4rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .wrapper { width: 100%; max-width: 640px; }
+
+  /* Progress */
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+  .progress-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--ruby);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .progress-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  .tab {
+    padding: 5px 13px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: var(--mono);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab:hover { border-color: var(--border-hover); color: var(--text); }
+  .tab.active-Ruby      { background: var(--ruby-bg);  color: var(--ruby);  border-color: var(--ruby); }
+  .tab.active-Rails     { background: var(--rails-bg); color: var(--rails); border-color: var(--rails); }
+  .tab.active-Metaprogramming { background: var(--meta-bg); color: var(--meta); border-color: var(--meta); }
+  .tab.active-RSpec     { background: var(--rspec-bg); color: var(--rspec); border-color: var(--rspec); }
+  .tab.active-Background-Jobs { background: var(--jobs-bg); color: var(--jobs); border-color: var(--jobs); }
+  .tab.active-All       { background: rgba(240,238,232,0.08); color: var(--text); border-color: rgba(240,238,232,0.3); }
+
+  /* Card */
+  .card-scene {
+    perspective: 1000px;
+    height: 280px;
+    margin-bottom: 1.25rem;
+    cursor: pointer;
+  }
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
+  }
+  .card-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+  }
+  .card-back {
+    transform: rotateY(180deg);
+    justify-content: flex-start;
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 1.5rem;
+    gap: 0;
+  }
+
+  .card-hint {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .card-term {
+    font-size: clamp(1.1rem, 3vw, 1.5rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-align: center;
+    line-height: 1.3;
+    color: var(--text);
+  }
+  .badge {
+    margin-top: 1rem;
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .badge-Ruby      { color: var(--ruby);  background: var(--ruby-bg);  border-color: var(--ruby); }
+  .badge-Rails     { color: var(--rails); background: var(--rails-bg); border-color: var(--rails); }
+  .badge-Metaprogramming { color: var(--meta); background: var(--meta-bg); border-color: var(--meta); }
+  .badge-RSpec     { color: var(--rspec); background: var(--rspec-bg); border-color: var(--rspec); }
+  .badge-Background-Jobs { color: var(--jobs); background: var(--jobs-bg); border-color: var(--jobs); }
+
+  .back-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .back-desc {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+  .back-code {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: #c9c5b8;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* Hint & buttons */
+  .tap-hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    margin-bottom: 1rem;
+    height: 18px;
+  }
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  .btn {
+    padding: 9px 22px;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+  }
+  .btn:hover { background: var(--surface2); color: var(--text); }
+  .btn-again { border-color: rgba(232,93,74,0.4); color: var(--ruby); }
+  .btn-again:hover { background: var(--ruby-bg); }
+  .btn-gotit { border-color: rgba(74,174,110,0.4); color: var(--rails); }
+  .btn-gotit:hover { background: var(--rails-bg); }
+  .btn-reset { font-size: 13px; }
+
+  /* Stats */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+  .stats span b { color: var(--text-muted); font-weight: 500; }
+
+  .done-msg {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--rails);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ruby <span>&</span> Rails Flashcards</h1>
+  <p>57 cards · Ruby · Rails · Metaprogramming · RSpec · Background Jobs</p>
+</header>
+
+<div class="wrapper">
+  <div class="progress-row">
+    <div class="progress-track"><div class="progress-fill" id="prog"></div></div>
+    <div class="progress-label" id="prog-label">0 / 0</div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="card-scene" id="cardScene">
+    <div class="card-inner" id="cardInner">
+      <div class="card-face" id="cardFront">
+        <div class="card-hint">tap to reveal</div>
+        <div class="card-term" id="frontTerm"></div>
+        <div class="badge" id="frontBadge"></div>
+      </div>
+      <div class="card-face card-back" id="cardBack">
+        <div class="back-label">answer</div>
+        <div class="back-desc" id="backDesc"></div>
+        <div class="back-code" id="backCode"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tap-hint" id="tapHint">tap the card to flip</div>
+
+  <div class="btn-row" id="btnRow" style="display:none"></div>
+
+  <div class="stats">
+    <span><b id="sDone">0</b> done</span>
+    <span><b id="sGot">0</b> got it</span>
+    <span><b id="sLeft">0</b> left</span>
+  </div>
+</div>
+
+<script>
+const ALL = [
+  {term:"safe navigation (&.)",cat:"Ruby",desc:"Calls a method only if the receiver is not nil, avoiding NoMethodError.",code:`user&.profile&.avatar_url`},
+  {term:"symbol to proc (&:method)",cat:"Ruby",desc:"Converts a symbol into a proc for clean iterator shorthand.",code:`names = users.map(&:name)\nnums.select(&:even?)`},
+  {term:"multiple return values",cat:"Ruby",desc:"Methods can return multiple values as an implicit array, destructured on assignment.",code:`def min_max(arr) = [arr.min, arr.max]\nlo, hi = min_max([3,1,5])`},
+  {term:"string interpolation",cat:"Ruby",desc:"Embed any Ruby expression inside a double-quoted string with #{...}.",code:`puts "Hello, #{name.upcase}!"`},
+  {term:"conditional assignment (||=)",cat:"Ruby",desc:"Assigns a value only if the variable is nil or false.",code:`options[:timeout] ||= 30`},
+  {term:"tap",cat:"Ruby",desc:"Yields self to a block and returns self — great for debug-logging in a chain.",code:`user.tap { |u| logger.info(u) }.save`},
+  {term:"splat operator (*)",cat:"Ruby",desc:"Collects remaining args into an array, or expands an array into arguments.",code:`def greet(first, *rest) = puts "Hi #{first}"\ngreet(*names)`},
+  {term:"double splat (**)",cat:"Ruby",desc:"Collects remaining keyword arguments into a hash, or expands a hash into kwargs.",code:`def configure(**opts)\n  opts[:debug] ||= false\nend`},
+  {term:"Comparable module",cat:"Ruby",desc:"Include Comparable and define <=> to get <, <=, >=, >, between?, clamp for free.",code:`class Temp\n  include Comparable\n  def <=>(other) = degrees <=> other.degrees\nend`},
+  {term:"each_with_object",cat:"Ruby",desc:"Iterates with a memo object, returning it — cleaner than inject for building collections.",code:`[1,2,3].each_with_object([]) { |n,a| a << n*2 }`},
+  {term:"proc vs lambda",cat:"Ruby",desc:"Lambdas check arity and return from themselves; procs skip arity and return from the caller.",code:`lam = ->(x) { x * 2 }\npr  = proc { |x| x * 2 }`},
+  {term:"frozen_string_literal",cat:"Ruby",desc:"Magic comment that freezes all string literals in the file, improving perf and preventing mutation.",code:`# frozen_string_literal: true`},
+  {term:"pattern matching (case/in)",cat:"Ruby",desc:"Ruby 3+ structural matching deconstructs objects in case/in expressions.",code:`case user\nin { role: "admin", name: String => n }\n  puts "Admin: #{n}"\nend`},
+  {term:"endless method",cat:"Ruby",desc:"Ruby 3.0+ one-liner method definition syntax — no end keyword needed.",code:`def double(x) = x * 2\ndef greet(name) = "Hello, #{name}"`},
+  {term:"numbered block params (_1, _2)",cat:"Ruby",desc:"Ruby 2.7+ shorthand for block parameters when names add no clarity.",code:`[1,2,3].map { _1 * 2 }\nhash.map { "#{_1}: #{_2}" }`},
+  {term:"scope",cat:"Rails",desc:"Named query fragments on a model using lambdas, chainable like any relation.",code:`scope :active, -> { where(active: true) }\nscope :recent, -> { order(created_at: :desc) }\nUser.active.recent.limit(10)`},
+  {term:"strong parameters",cat:"Rails",desc:"Require and permit expected params before mass-assignment to prevent over-posting.",code:`params.require(:user).permit(:name, :email)`},
+  {term:"before_action",cat:"Rails",desc:"Controller callback that runs before specified actions — ideal for auth and resource loading.",code:`before_action :authenticate_user!\nbefore_action :set_post, only: [:show,:edit]`},
+  {term:"concerns (ActiveSupport::Concern)",cat:"Rails",desc:"Reusable modules for models/controllers with hooks and class methods.",code:`module Publishable\n  extend ActiveSupport::Concern\n  included { scope :published, -> { where(published: true) } }\nend`},
+  {term:"has_many :through",cat:"Rails",desc:"Many-to-many via a join model, with full access to the join record's attributes.",code:`has_many :enrollments\nhas_many :courses, through: :enrollments`},
+  {term:"polymorphic associations",cat:"Rails",desc:"A single association that can belong to more than one model type.",code:`belongs_to :commentable, polymorphic: true\n# Post: has_many :comments, as: :commentable`},
+  {term:"counter_cache",cat:"Rails",desc:"Keeps a cached count column on the parent, avoiding COUNT(*) queries.",code:`belongs_to :post, counter_cache: true\n# add :comments_count to posts table`},
+  {term:"find_each",cat:"Rails",desc:"Fetches large datasets in batches, avoiding loading all records into memory.",code:`User.find_each(batch_size: 500) { |u| u.send_digest! }`},
+  {term:"includes (eager loading)",cat:"Rails",desc:"Prevents N+1 queries by preloading associations.",code:`Post.includes(:author, :comments).where(published: true)`},
+  {term:"delegate",cat:"Rails",desc:"Delegates method calls to an association, flattening the API.",code:`delegate :name, :email, to: :user, prefix: true\n# exposes: post.user_name, post.user_email`},
+  {term:"service objects",cat:"Rails",desc:"Plain Ruby objects in app/services encapsulating a single business operation.",code:`class CreateOrder\n  def initialize(user, cart)\n    @user, @cart = user, cart\n  end\n  def call\n    # create, charge, notify\n  end\nend`},
+  {term:"turbo_stream (Hotwire)",cat:"Rails",desc:"Replaces a page fragment over WebSocket or form response without a full reload.",code:`turbo_stream.replace "msg_#{@msg.id}",\n  partial: "messages/message",\n  locals: { message: @msg }`},
+  {term:"method_missing",cat:"Metaprogramming",desc:"Override to intercept undefined method calls — the basis of many DSLs.",code:`def method_missing(name, *args)\n  return find_by(name) if name.to_s.start_with?("find_by_")\n  super\nend`},
+  {term:"respond_to_missing?",cat:"Metaprogramming",desc:"Always pair with method_missing so introspection works correctly.",code:`def respond_to_missing?(name, include_private = false)\n  name.to_s.start_with?("find_by_") || super\nend`},
+  {term:"define_method",cat:"Metaprogramming",desc:"Defines a method dynamically inside a class at runtime — cleaner than eval.",code:`%w[admin editor viewer].each do |role|\n  define_method("#{role}?") { self.role == role }\nend`},
+  {term:"class_eval / module_eval",cat:"Metaprogramming",desc:"Reopens a class in the context of a string or block to add methods dynamically.",code:`String.class_eval do\n  def palindrome? = self == self.reverse\nend`},
+  {term:"instance_variable_get/set",cat:"Metaprogramming",desc:"Read or write instance variables by name at runtime without accessor methods.",code:`instance_variable_set(:@name, "Alice")\ninstance_variable_get(:@name) # => "Alice"`},
+  {term:"send",cat:"Metaprogramming",desc:"Calls any method by name, including private ones — useful for dynamic dispatch.",code:`obj.send(:private_method, arg)\nmodel.send("#{attr}=", value)`},
+  {term:"extend vs include",cat:"Metaprogramming",desc:"include adds module methods as instance methods; extend adds them as class methods.",code:`module Greetable\n  def greet = "Hello!"\nend\nclass A; include Greetable; end  # A.new.greet\nclass B; extend  Greetable; end  # B.greet`},
+  {term:"prepend",cat:"Metaprogramming",desc:"Inserts a module before the class in the ancestor chain, letting you wrap existing methods.",code:`module Logging\n  def save\n    puts "saving..."\n    super\n  end\nend\nclass Post; prepend Logging; end`},
+  {term:"Struct",cat:"Metaprogramming",desc:"Generates a lightweight class with accessors, ==, and to_s from a list of attributes.",code:`Point = Struct.new(:x, :y) do\n  def distance = Math.sqrt(x**2 + y**2)\nend`},
+  {term:"describe / context / it",cat:"RSpec",desc:"describe groups examples by subject; context by scenario; it declares a single example.",code:`describe Order do\n  context "when empty" do\n    it "has a zero total" do\n      expect(Order.new.total).to eq(0)\n    end\n  end\nend`},
+  {term:"let / let!",cat:"RSpec",desc:"let defines a lazily-evaluated helper; let! evaluates eagerly (before each example).",code:`let(:user)  { create(:user) }\nlet!(:post) { create(:post, author: user) }`},
+  {term:"subject",cat:"RSpec",desc:"The implicit or explicit object under test; used with is_expected for one-liner expectations.",code:`subject(:result) { described_class.call(params) }\nit { is_expected.to be_success }`},
+  {term:"before / after hooks",cat:"RSpec",desc:"Run setup/teardown code before or after each or all examples in a group.",code:`before { sign_in user }\nafter  { user.destroy }`},
+  {term:"shared_examples",cat:"RSpec",desc:"Reuse a set of examples across multiple describe blocks to DRY up specs.",code:`shared_examples "a paginated resource" do\n  it { is_expected.to have_key(:meta) }\nend\nit_behaves_like "a paginated resource"`},
+  {term:"doubles and mocks",cat:"RSpec",desc:"instance_double creates a verifying test double; allow stubs a method; expect verifies a call.",code:`mailer = instance_double(UserMailer)\nallow(mailer).to receive(:deliver_later)\nexpect(mailer).to have_received(:deliver_later)`},
+  {term:"have_received (spy style)",cat:"RSpec",desc:"Assert after-the-fact that a message was received — works with spy or allow.",code:`allow(stripe).to receive(:charge)\norder.checkout\nexpect(stripe).to have_received(:charge).with(amount: 500)`},
+  {term:"aggregate_failures",cat:"RSpec",desc:"Runs all expectations in a block and reports every failure, not just the first.",code:`aggregate_failures do\n  expect(res.status).to eq(200)\n  expect(res.body).to include("ok")\nend`},
+  {term:"FactoryBot traits",cat:"RSpec",desc:"Traits add reusable attribute overrides to a factory, composable on create/build.",code:`factory :user do\n  trait :admin { role { "admin" } }\n  trait :suspended { active { false } }\nend\ncreate(:user, :admin, :suspended)`},
+  {term:"VCR / WebMock",cat:"RSpec",desc:"WebMock stubs HTTP; VCR records and replays real HTTP interactions as cassettes.",code:`stub_request(:get, /api.example.com/)\n  .to_return(status: 200, body: fixture)`},
+  {term:"Sidekiq worker",cat:"Background Jobs",desc:"Include Sidekiq::Worker and define perform to run a job asynchronously.",code:`class EmailWorker\n  include Sidekiq::Worker\n  def perform(user_id)\n    User.find(user_id).send_welcome!\n  end\nend\nEmailWorker.perform_async(user.id)`},
+  {term:"perform_later (ActiveJob)",cat:"Background Jobs",desc:"Rails-native job abstraction; perform_later enqueues, perform_now runs inline.",code:`class ReportJob < ApplicationJob\n  queue_as :default\n  def perform(user)\n    ReportMailer.send(user).deliver_now\n  end\nend\nReportJob.perform_later(user)`},
+  {term:"set (Sidekiq options)",cat:"Background Jobs",desc:"Chain .set to override queue, wait time, or retry count per enqueue.",code:`HardJob.set(queue: :critical, wait: 5.minutes)\n       .perform_async(record.id)`},
+  {term:"retry_on / discard_on",cat:"Background Jobs",desc:"Automatically retry on specific errors with wait and attempt limits; discard on others.",code:`retry_on  Stripe::RateLimitError, wait: :exponentially_longer, attempts: 5\ndiscard_on ActiveRecord::RecordNotFound`},
+  {term:"Sidekiq scheduled jobs",cat:"Background Jobs",desc:"Use perform_in or perform_at to schedule a job for future execution.",code:`ReminderWorker.perform_in(1.hour, user.id)\nReportWorker.perform_at(Time.zone.tomorrow.noon, org.id)`},
+  {term:"idempotency",cat:"Background Jobs",desc:"Design jobs so running them twice produces the same result — guard with DB state or unique keys.",code:`def perform(order_id)\n  order = Order.find(order_id)\n  return if order.charged?   # guard\n  order.charge!\nend`},
+  {term:"Sidekiq batches (Pro)",cat:"Background Jobs",desc:"Group jobs into a batch and run a callback when all complete.",code:`batch = Sidekiq::Batch.new\nbatch.on(:complete, MyCallback, "id" => record.id)\nbatch.jobs { items.each { |i| ItemWorker.perform_async(i) } }`},
+  {term:"unique jobs",cat:"Background Jobs",desc:"Prevent duplicate jobs in the queue with sidekiq-unique-jobs or ActiveJob uniqueness plugins.",code:`sidekiq_options unique: :until_executed,\n                unique_args: ->(args) { [args.first] }`},
+];
+
+let category = "All";
+let deck = [];
+let gotIt = new Set();
+let current = 0;
+let flipped = false;
+
+function catKey(c) { return c.replace(/\s+/g, '-'); }
+
+function categories() {
+  return ["All", ...new Set(ALL.map(c => c.cat))];
+}
+
+function buildDeck() {
+  deck = (category === "All" ? ALL : ALL.filter(c => c.cat === category))
+    .filter(c => !gotIt.has(c.term))
+    .sort(() => Math.random() - 0.5);
+  current = 0;
+}
+
+function renderTabs() {
+  document.getElementById("tabs").innerHTML = categories().map(c => {
+    const active = c === category ? ` active-${catKey(c)}` : "";
+    return `<button class="tab${active}" onclick="setCategory('${c.replace(/'/g,"\\'")}')">
+      ${c === "Background Jobs" ? "BG Jobs" : c}
+    </button>`;
+  }).join("");
+}
+
+function setCategory(c) {
+  category = c; gotIt.clear(); buildDeck(); renderTabs(); showCard();
+}
+
+function updateStats() {
+  const pool = category === "All" ? ALL : ALL.filter(c => c.cat === category);
+  const done = gotIt.size;
+  const pct = pool.length ? (done / pool.length) * 100 : 0;
+  document.getElementById("prog").style.width = pct + "%";
+  document.getElementById("prog-label").textContent = done + " / " + pool.length;
+  document.getElementById("sDone").textContent = done;
+  document.getElementById("sGot").textContent = done;
+  document.getElementById("sLeft").textContent = deck.length;
+}
+
+function showCard() {
+  flipped = false;
+  document.getElementById("cardInner").classList.remove("flipped");
+  document.getElementById("tapHint").textContent = "tap the card to flip";
+  document.getElementById("btnRow").style.display = "none";
+  document.getElementById("cardScene").onclick = flipCard;
+  updateStats();
+
+  if (deck.length === 0) {
+    document.getElementById("frontTerm").innerHTML = `<span style="color:var(--rails)">all done! 🎉</span>`;
+    document.getElementById("frontBadge").style.display = "none";
+    document.getElementById("tapHint").textContent = "";
+    document.getElementById("cardScene").onclick = null;
+    document.getElementById("btnRow").innerHTML = `<button class="btn btn-reset" onclick="resetDeck()">↺ study again</button>`;
+    document.getElementById("btnRow").style.display = "flex";
+    return;
+  }
+
+  const card = deck[current % deck.length];
+  document.getElementById("frontTerm").textContent = card.term;
+  const badge = document.getElementById("frontBadge");
+  badge.textContent = card.cat;
+  badge.className = "badge badge-" + catKey(card.cat);
+  badge.style.display = "";
+  document.getElementById("backDesc").textContent = card.desc;
+  document.getElementById("backCode").textContent = card.code;
+}
+
+function flipCard() {
+  if (flipped) return;
+  flipped = true;
+  document.getElementById("cardInner").classList.add("flipped");
+  document.getElementById("tapHint").textContent = "";
+  document.getElementById("btnRow").innerHTML =
+    `<button class="btn btn-again" onclick="mark(false)">study again</button>
+     <button class="btn btn-gotit" onclick="mark(true)">got it</button>`;
+  document.getElementById("btnRow").style.display = "flex";
+}
+
+function mark(known) {
+  const card = deck[current % deck.length];
+  if (known) {
+    gotIt.add(card.term);
+    deck.splice(current % deck.length, 1);
+  } else {
+    deck.splice(current % deck.length, 1);
+    deck.push(card);
+    current = current % Math.max(deck.length, 1);
+  }
+  showCard();
+}
+
+function resetDeck() { gotIt.clear(); buildDeck(); showCard(); }
+
+renderTabs(); buildDeck(); showCard();
+</script>
+</body>
+</html>

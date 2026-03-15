@@ -5,22 +5,27 @@ A configuration-driven flashcard engine for studying technical topics, with a sh
 ## File Organization
 
 ```
-├── flashcard-engine.js          # Shared engine (~400 lines JS)
+flashcards/
+├── src/
+│   ├── srs.js                   # SM-2 spaced repetition algorithm (pure functions)
+│   └── flashcard-engine.js      # Shared UI engine
+├── tests/
+│   └── srs.test.js              # Unit tests for SM-2 algorithm
 ├── flashcards.html              # Hub page listing all decks
 ├── postgres-flashcards.html     # PostgreSQL deck (54 cards)
 ├── ruby-flashcards.html         # Ruby & Rails deck (57 cards)
 ├── napkin-math-flashcards.html  # Napkin Math deck (46 cards)
-├── auth-flashcards.html         # Authorization Models deck (6 cards, React-based)
+└── auth-flashcards.html         # Authorization Models deck (6 cards, React-based)
 ```
 
 ## How It Works
 
-### Shared Engine (`flashcard-engine.js`)
+### Shared Engine (`flashcards/src/flashcard-engine.js`)
 
 Each deck page is a minimal HTML file that:
 
 1. Sets `window.FLASHCARD_CONFIG` with deck-specific data
-2. Loads `flashcard-engine.js`, which reads that config and renders the full UI
+2. Loads `srs.js` and `flashcard-engine.js` from `flashcards/src/`, which render the full UI
 
 The config object shape:
 
@@ -53,8 +58,8 @@ window.FLASHCARD_CONFIG = {
 
 - **Category tabs** — filter cards by topic, plus an "All" tab
 - **3D flip cards** — click to reveal the answer (CSS `rotateY` transform)
-- **Study controls** — "study again" (re-shuffles card into deck) or "got it" (removes from deck)
-- **Progress bar** — shows mastered vs. remaining cards
+- **SM-2 spaced repetition** — rate recall 0–5, cards scheduled based on performance
+- **Progress bar** — shows learned vs. total cards
 - **Theme toggle** — light/dark mode button (top-right corner)
 
 ### Adding a New Deck
@@ -63,7 +68,7 @@ Create an HTML file following the pattern of an existing deck:
 
 1. Add Google Fonts link (`DM Sans` + `DM Mono`)
 2. Set `window.FLASHCARD_CONFIG` with your title, categories, and cards
-3. Add `<script src="flashcard-engine.js"></script>`
+3. Add `<script src="/flashcards/src/srs.js"></script>` and `<script src="/flashcards/src/flashcard-engine.js"></script>`
 4. Add a link to the new deck in `flashcards.html`
 
 That's it — the engine handles all rendering, interaction, and persistence.
@@ -84,9 +89,9 @@ Two keys per deck, prefixed by `storagePrefix`:
 | Key | Value |
 |-----|-------|
 | `{prefix}-theme` | `"light"` or `"dark"` |
-| `{prefix}-gotit` | JSON array of mastered card terms |
+| `{prefix}-srs` | JSON object of SM-2 card data keyed by term |
 
-Example: `pg-flashcards-gotit` → `["B-tree index", "Hash index", ...]`
+Example: `pg-flashcards-srs` → `{"B-tree index": {"ef": 2.5, "interval": 6, "reps": 2, "nextReview": 1742428800000}, ...}`
 
 ## Theming
 

@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PDF Form Mapper</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1f2e;--teal:#0d7a6e;--teal-h:#0a6359;--teal-light:#e5f4f2;
+  --amber:#d97706;--amber-light:#fef3c7;--red:#dc2626;
+  --border:#d1dbd9;--surface:#f6faf9;--white:#fff;--muted:#637570;--r:10px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--surface);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+#topbar{background:var(--ink);color:#fff;display:flex;align-items:center;gap:14px;padding:0 18px;height:54px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+#topbar h1{font-size:.95rem;font-weight:700;flex:1}
+.mode-pill{font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--teal);color:#fff;text-transform:uppercase;letter-spacing:.4px}
+#app{display:flex;flex:1;min-height:0;overflow:hidden}
+#sidebar{width:290px;min-width:250px;background:var(--white);border-right:1.5px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.sb-sec{padding:12px 14px;border-bottom:1px solid var(--border)}
+.sb-sec h2{font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:9px}
+.file-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 11px;border:1.5px dashed var(--border);border-radius:var(--r);background:var(--surface);color:var(--ink);font-size:.82rem;font-weight:500;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:7px;text-align:left}
+.file-btn:hover{border-color:var(--teal);background:var(--teal-light)}
+.file-btn .icon{font-size:1.1rem;flex-shrink:0}
+.file-btn small{display:block;font-size:.7rem;color:var(--muted);font-weight:400}
+.file-btn input{display:none}
+#mode-bar{background:var(--white);border-bottom:1.5px solid var(--border);display:flex}
+.m-tab{padding:9px 13px;font-size:.8rem;font-weight:600;color:var(--muted);border-bottom:2.5px solid transparent;cursor:pointer;transition:color .15s,border-color .15s}
+.m-tab.active{color:var(--teal);border-bottom-color:var(--teal)}
+#field-list{flex:1;overflow-y:auto;padding:8px}
+.empty-msg{text-align:center;color:var(--muted);font-size:.8rem;padding:26px 10px;line-height:1.6}
+.f-item{display:flex;align-items:center;gap:7px;padding:8px 9px;border-radius:8px;margin-bottom:5px;background:var(--surface);border:1.5px solid var(--border);cursor:pointer;transition:border-color .15s}
+.f-item:hover{border-color:var(--teal)}
+.f-item.sel{border-color:var(--teal);background:var(--teal-light)}
+.f-num{width:21px;height:21px;border-radius:50%;background:var(--teal);color:white;font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.f-info{flex:1;min-width:0}
+.f-name{font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.f-sub{font-size:.7rem;color:var(--muted)}
+.f-del{color:#ccc;cursor:pointer;font-size:.95rem;padding:2px 4px;border-radius:4px}
+.f-del:hover{color:var(--red)}
+#sb-footer{padding:11px;border-top:1.5px solid var(--border);display:flex;flex-direction:column;gap:7px}
+.btn{padding:10px 14px;border-radius:var(--r);font-size:.83rem;font-weight:700;border:none;cursor:pointer;transition:opacity .15s,background .15s;text-align:center}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn-teal{background:var(--teal);color:white}
+.btn-teal:not(:disabled):hover{background:var(--teal-h)}
+.btn-outline{background:white;color:var(--teal);border:1.5px solid var(--teal)}
+.btn-outline:not(:disabled):hover{background:var(--teal-light)}
+#main{flex:1;overflow-y:auto;overflow-x:auto;padding:20px;display:flex;flex-direction:column;align-items:center;gap:22px;min-width:0}
+#empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+#empty-state .big{font-size:3rem;margin-bottom:12px}
+#empty-state h2{font-size:1.05rem;color:var(--ink);margin-bottom:6px}
+#empty-state p{font-size:.86rem;line-height:1.6}
+.page-wrap{position:relative;box-shadow:0 4px 24px rgba(0,0,0,.12);border-radius:3px;overflow:visible;cursor:crosshair;flex-shrink:0;background:white}
+.page-wrap canvas{display:block;border-radius:3px}
+.f-overlay{position:absolute;border:2px solid var(--teal);background:rgba(13,122,110,.13);border-radius:3px;cursor:pointer;transition:background .15s}
+.f-overlay:hover{background:rgba(13,122,110,.22)}
+.f-overlay.sel{border-color:var(--amber);background:rgba(217,119,6,.14)}
+.f-badge{position:absolute;top:-11px;left:-1px;background:var(--teal);color:white;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px 3px 3px 0;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.f-overlay.sel .f-badge{background:var(--amber)}
+#drag-rect{position:fixed;border:2px dashed var(--teal);background:rgba(13,122,110,.07);pointer-events:none;display:none;z-index:200}
+/* modals */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal-box{background:white;border-radius:14px;padding:22px 20px;width:min(460px,94vw);box-shadow:0 12px 48px rgba(0,0,0,.25)}
+.modal-box h3{font-size:1rem;margin-bottom:12px}
+.mf{margin-bottom:13px}
+.mf label{display:block;font-size:.74rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.mf input,.mf select{width:100%;padding:10px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:.92rem;font-family:inherit;color:var(--ink);outline:none}
+.mf input:focus,.mf select:focus{border-color:var(--teal)}
+.m-btns{display:flex;gap:7px;margin-top:16px}
+.m-btns .btn{flex:1}
+.notice{background:var(--amber-light);border-left:3px solid var(--amber);padding:9px 11px;border-radius:6px;font-size:.8rem;color:#7c4a00;line-height:1.5}
+/* fill mode */
+#fill-mode{display:none;width:100%;max-width:560px}
+#fill-mode.vis{display:block}
+#map-mode.gone{display:none}
+.fill-card{background:white;border:1.5px solid var(--border);border-radius:var(--r);padding:13px 13px;margin-bottom:9px}
+.fill-card label{display:block;font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px}
+.fill-card input,.fill-card textarea{width:100%;padding:11px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:inherit;color:var(--ink);outline:none;-webkit-appearance:none}
+.fill-card input:focus,.fill-card textarea:focus{border-color:var(--teal)}
+.fill-card textarea{min-height:70px;resize:vertical}
+.pg-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--teal);background:var(--teal-light);padding:3px 10px;border-radius:20px;margin:13px 0 8px;display:inline-block}
+/* signature pad */
+.sig-wrap{border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:#fafcfb}
+.sig-wrap canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
+.sig-toolbar{display:flex;align-items:center;gap:7px;padding:7px 9px;border-top:1px solid var(--border);background:var(--surface)}
+.sig-toolbar span{font-size:.72rem;color:var(--muted);flex:1}
+.sig-clear-btn{font-size:.75rem;font-weight:700;padding:4px 11px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;color:var(--ink)}
+.sig-clear-btn:hover{border-color:var(--red);color:var(--red)}
+/* share url input */
+#share-url-input{width:100%;padding:10px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;font-family:monospace;color:var(--ink);outline:none;background:#f9fafb;margin-bottom:8px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>📋 PDF Form Mapper</h1>
+  <span class="mode-pill" id="mode-pill">Map</span>
+</div>
+
+<div id="app">
+  <div id="sidebar">
+    <div id="mode-bar">
+      <div class="m-tab active" id="tab-map">🗺 Map Fields</div>
+      <div class="m-tab" id="tab-fill">✏️ Fill Form</div>
+    </div>
+    <div class="sb-sec">
+      <h2>1 · Load PDF</h2>
+      <label class="file-btn">
+        <span class="icon">📄</span>
+        <div><span id="pdf-name">Choose PDF file</span><small>Tap to browse</small></div>
+        <input type="file" accept=".pdf,application/pdf" id="pdf-input"/>
+      </label>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:.7rem;color:var(--muted);font-weight:600">OR</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <input type="url" id="pdf-url" placeholder="https://…/form.pdf"
+          style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.8rem;font-family:inherit;color:var(--ink);outline:none;min-width:0"/>
+        <button id="fetch-btn" class="btn btn-teal" disabled style="padding:8px 12px;white-space:nowrap;font-size:.8rem">Load</button>
+      </div>
+      <div id="fetch-status" style="font-size:.72rem;color:var(--muted);margin-top:5px;min-height:16px"></div>
+    </div>
+    <div class="sb-sec">
+      <h2>2 · Config</h2>
+      <label class="file-btn">
+        <span class="icon">📂</span>
+        <div><span>Load saved config</span><small>Re-use a field layout</small></div>
+        <input type="file" accept=".json" id="cfg-input"/>
+      </label>
+    </div>
+    <div class="sb-sec" id="map-hint">
+      <div class="notice"><strong>Click and drag</strong> on the PDF to draw a box around each blank field. You'll name it right after.</div>
+    </div>
+    <div id="field-list">
+      <div class="empty-msg">No fields yet.<br/>Upload a PDF and draw boxes where the form fields are.</div>
+    </div>
+    <div id="sb-footer">
+      <button class="btn btn-outline" id="save-cfg-btn" disabled>💾 Save field config (.json)</button>
+      <button class="btn btn-outline" id="share-btn" disabled>🔗 Create share link</button>
+      <button class="btn btn-teal" id="gen-btn" disabled>✅ Generate filled PDF</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="empty-state">
+      <div class="big">📄</div>
+      <h2>Upload a PDF to get started</h2>
+      <p>Load the housing application PDF from the sidebar.<br/>Then draw boxes over each blank you need to fill in.</p>
+    </div>
+    <div id="map-mode"></div>
+    <div id="fill-mode"></div>
+  </div>
+</div>
+
+<div id="drag-rect"></div>
+
+<!-- Field name modal -->
+<div class="modal-bg" id="field-modal">
+  <div class="modal-box">
+    <h3>Name this field</h3>
+    <div class="mf">
+      <label>Field label</label>
+      <input type="text" id="modal-label" placeholder="e.g. Full Name, Date of Birth…" autocomplete="off"/>
+    </div>
+    <div class="mf">
+      <label>Field type</label>
+      <select id="modal-type">
+        <option value="text">Text (single line)</option>
+        <option value="textarea">Long text / paragraph</option>
+        <option value="date">Date</option>
+        <option value="tel">Phone number</option>
+        <option value="email">Email address</option>
+        <option value="checkbox">Checkbox (yes / no)</option>
+        <option value="signature">Signature / initials</option>
+      </select>
+    </div>
+    <div class="m-btns">
+      <button class="btn btn-outline" id="modal-cancel">Cancel</button>
+      <button class="btn btn-teal" id="modal-confirm">Add Field</button>
+    </div>
+  </div>
+</div>
+
+<!-- Share modal -->
+<div class="modal-bg" id="share-modal">
+  <div class="modal-box">
+    <h3>🔗 Share this form</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;line-height:1.5">Send this link to anyone — they'll open the form ready to fill in, with no setup needed.</p>
+    <input type="text" id="share-url-input" readonly/>
+    <div style="display:flex;gap:7px">
+      <button class="btn btn-teal" id="copy-btn" style="flex:1">Copy link</button>
+      <button class="btn btn-outline" id="share-close-btn" style="flex:1">Close</button>
+    </div>
+    <p id="share-copy-msg" style="font-size:.78rem;color:var(--teal);min-height:18px;margin-top:8px"></p>
+    <div id="share-pdf-warn" class="notice" style="margin-top:10px;display:none">⚠️ No PDF URL set — the recipient will need to upload the PDF themselves. Paste a public URL in the Load PDF section to avoid this.</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// All code runs after DOM is ready — no inline onclick anywhere
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+
+try { pdfjsLib.GlobalWorkerOptions.workerSrc = ''; } catch(e) {}
+
+// ── STATE ──────────────────────────────────────────────────────
+let pdfJsDoc = null;
+let rawBytes  = null;
+let pdfUrl    = '';
+let pageWraps = [];
+let fields    = [];
+let selId     = null;
+let currentTab = 'map';
+
+// drag state
+let isDragging = false;
+let dragWrap   = null;
+let dragStart  = null;
+
+// ── HELPERS ────────────────────────────────────────────────────
+function $id(id) { return document.getElementById(id); }
+
+// ── PDF LOAD (file) ────────────────────────────────────────────
+$id('pdf-input').addEventListener('change', async function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  $id('pdf-name').textContent = file.name;
+  pdfUrl = '';
+  rawBytes = new Uint8Array(await file.arrayBuffer());
+  await renderPDF();
+});
+
+// ── PDF LOAD (url) ─────────────────────────────────────────────
+$id('pdf-url').addEventListener('input', function() {
+  $id('fetch-btn').disabled = !this.value.trim();
+});
+
+$id('fetch-btn').addEventListener('click', async function() {
+  const url = $id('pdf-url').value.trim(); if (!url) return;
+  const status = $id('fetch-status');
+  this.disabled = true; this.textContent = 'Loading…';
+  status.textContent = 'Fetching PDF…'; status.style.color = 'var(--muted)';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    rawBytes = new Uint8Array(await res.arrayBuffer());
+    pdfUrl = url;
+    $id('pdf-name').textContent = url.split('/').pop() || 'form.pdf';
+    status.textContent = '✓ PDF loaded'; status.style.color = 'var(--teal)';
+    await renderPDF();
+  } catch(err) {
+    status.textContent = '✗ ' + err.message + ' (check URL / CORS)';
+    status.style.color = 'var(--red)';
+  }
+  this.disabled = false; this.textContent = 'Load';
+});
+
+// ── RENDER PDF ─────────────────────────────────────────────────
+async function renderPDF() {
+  pdfJsDoc = await pdfjsLib.getDocument({ data: rawBytes }).promise;
+  const mapMode = $id('map-mode');
+  mapMode.innerHTML = '';
+  pageWraps = [];
+  $id('empty-state').style.display = 'none';
+
+  for (let p = 1; p <= pdfJsDoc.numPages; p++) {
+    const page = await pdfJsDoc.getPage(p);
+    const vp = page.getViewport({ scale: 1.6 });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'page-wrap';
+    wrap.dataset.page = p;
+    wrap.style.width  = vp.width  + 'px';
+    wrap.style.height = vp.height + 'px';
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = vp.width;
+    canvas.height = vp.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    wrap.appendChild(canvas);
+
+    if (pdfJsDoc.numPages > 1) {
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'position:absolute;top:6px;right:8px;font-size:10px;font-weight:700;color:#999;background:rgba(255,255,255,.85);padding:2px 7px;border-radius:10px;pointer-events:none';
+      lbl.textContent = 'Page ' + p;
+      wrap.appendChild(lbl);
+    }
+
+    wrap.addEventListener('mousedown', startDrag);
+    wrap.addEventListener('touchstart', startDragTouch, { passive: false });
+    mapMode.appendChild(wrap);
+    pageWraps.push({ wrap, pageNum: p });
+  }
+
+  paintOverlays();
+  refreshList();
+  updateButtons();
+}
+
+// ── DRAG TO DRAW ───────────────────────────────────────────────
+const dragEl = $id('drag-rect');
+
+function wrapFromEl(el) {
+  let cur = el;
+  while (cur && !cur.dataset.page) cur = cur.parentElement;
+  return cur;
+}
+function clientPos(e) {
+  const src = e.touches ? e.touches[0] : e;
+  return { x: src.clientX, y: src.clientY };
+}
+function relPos(cx, cy, wrap) {
+  const r = wrap.getBoundingClientRect();
+  return { x: cx - r.left, y: cy - r.top };
+}
+
+function startDrag(e) {
+  if (currentTab !== 'map') return;
+  if (e.button !== 0) return;
+  const wrap = wrapFromEl(e.target); if (!wrap) return;
+  e.preventDefault();
+  dragWrap = wrap;
+  const p = clientPos(e);
+  dragStart = relPos(p.x, p.y, wrap);
+  isDragging = true;
+}
+function startDragTouch(e) {
+  if (currentTab !== 'map') return;
+  const wrap = wrapFromEl(e.target); if (!wrap) return;
+  e.preventDefault();
+  dragWrap = wrap;
+  const p = clientPos(e);
+  dragStart = relPos(p.x, p.y, wrap);
+  isDragging = true;
+  document.addEventListener('touchmove', moveDragTouch, { passive: false });
+  document.addEventListener('touchend', endDragTouch);
+}
+function moveDrag(e) {
+  if (!isDragging || !dragWrap) return;
+  const p = clientPos(e);
+  paintDragRect(p.x, p.y);
+}
+function moveDragTouch(e) {
+  e.preventDefault();
+  if (!isDragging || !dragWrap) return;
+  const p = clientPos(e);
+  paintDragRect(p.x, p.y);
+}
+function paintDragRect(cx, cy) {
+  const r = dragWrap.getBoundingClientRect();
+  const sx = dragStart.x + r.left, sy = dragStart.y + r.top;
+  Object.assign(dragEl.style, {
+    display: 'block',
+    left: Math.min(sx, cx) + 'px', top: Math.min(sy, cy) + 'px',
+    width: Math.abs(cx - sx) + 'px', height: Math.abs(cy - sy) + 'px'
+  });
+}
+function endDrag(e) {
+  if (!isDragging) return;
+  const p = clientPos(e);
+  finishDrag(p.x, p.y);
+}
+function endDragTouch(e) {
+  if (!isDragging) return;
+  const t = e.changedTouches[0];
+  finishDrag(t.clientX, t.clientY);
+  document.removeEventListener('touchmove', moveDragTouch);
+  document.removeEventListener('touchend', endDragTouch);
+}
+function finishDrag(cx, cy) {
+  isDragging = false;
+  dragEl.style.display = 'none';
+  if (!dragWrap || !dragStart) { dragWrap = null; dragStart = null; return; }
+  const end = relPos(cx, cy, dragWrap);
+  const x0 = Math.min(dragStart.x, end.x);
+  const y0 = Math.min(dragStart.y, end.y);
+  const rw = Math.abs(end.x - dragStart.x);
+  const rh = Math.abs(end.y - dragStart.y);
+  const capWrap = dragWrap;
+  dragWrap = null; dragStart = null;
+  if (rw < 8 || rh < 5) return;
+  openFieldModal(x0, y0, rw, rh, capWrap);
+}
+
+window.addEventListener('mousemove', moveDrag);
+window.addEventListener('mouseup', endDrag);
+
+// ── FIELD MODAL ────────────────────────────────────────────────
+let pendRect = null, pendWrap = null;
+
+function openFieldModal(x, y, w, h, wrap) {
+  pendRect = { x, y, w, h };
+  pendWrap = wrap;
+  $id('modal-label').value = '';
+  $id('modal-type').value = 'text';
+  $id('field-modal').classList.add('open');
+  setTimeout(() => $id('modal-label').focus(), 60);
+}
+function closeFieldModal() {
+  $id('field-modal').classList.remove('open');
+  pendRect = null; pendWrap = null;
+}
+function confirmFieldModal() {
+  const label = $id('modal-label').value.trim();
+  if (!label) { $id('modal-label').focus(); return; }
+  const type = $id('modal-type').value;
+  const pageNum = parseInt(pendWrap.dataset.page);
+  const pw = pendWrap.offsetWidth, ph = pendWrap.offsetHeight;
+  fields.push({
+    id: 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    label, type, page: pageNum, value: '',
+    x: pendRect.x / pw, y: pendRect.y / ph,
+    w: pendRect.w / pw, h: pendRect.h / ph
+  });
+  closeFieldModal();
+  paintOverlays();
+  refreshList();
+  updateButtons();
+}
+
+$id('modal-cancel').addEventListener('click', closeFieldModal);
+$id('modal-confirm').addEventListener('click', confirmFieldModal);
+$id('modal-label').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') confirmFieldModal();
+  if (e.key === 'Escape') closeFieldModal();
+});
+$id('field-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeFieldModal();
+});
+
+// ── OVERLAYS ───────────────────────────────────────────────────
+function paintOverlays() {
+  document.querySelectorAll('.f-overlay').forEach(el => el.remove());
+  pageWraps.forEach(({ wrap, pageNum }) => {
+    fields.filter(f => f.page === pageNum).forEach(f => {
+      const el = document.createElement('div');
+      el.className = 'f-overlay' + (f.id === selId ? ' sel' : '');
+      el.dataset.fid = f.id;
+      el.style.left   = (f.x * wrap.offsetWidth)  + 'px';
+      el.style.top    = (f.y * wrap.offsetHeight) + 'px';
+      el.style.width  = (f.w * wrap.offsetWidth)  + 'px';
+      el.style.height = (f.h * wrap.offsetHeight) + 'px';
+      const badge = document.createElement('div');
+      badge.className = 'f-badge';
+      badge.textContent = (fields.findIndex(ff => ff.id === f.id) + 1) + '. ' + f.label;
+      el.appendChild(badge);
+      el.addEventListener('click', function(e) { e.stopPropagation(); selectField(f.id); });
+      wrap.appendChild(el);
+    });
+  });
+}
+
+// ── FIELD LIST ─────────────────────────────────────────────────
+function refreshList() {
+  const list = $id('field-list');
+  list.innerHTML = '';
+  if (!fields.length) {
+    list.innerHTML = '<div class="empty-msg">No fields yet.<br/>Upload a PDF and draw boxes where the form fields are.</div>';
+    return;
+  }
+  fields.forEach((f, i) => {
+    const item = document.createElement('div');
+    item.className = 'f-item' + (f.id === selId ? ' sel' : '');
+    item.innerHTML = `<div class="f-num">${i+1}</div>
+      <div class="f-info"><div class="f-name">${f.label}</div><div class="f-sub">Pg ${f.page} · ${f.type}</div></div>
+      <span class="f-del">✕</span>`;
+    item.querySelector('.f-del').addEventListener('click', function(e) {
+      e.stopPropagation(); removeField(f.id);
+    });
+    item.addEventListener('click', () => selectField(f.id));
+    list.appendChild(item);
+  });
+}
+
+function selectField(id) {
+  selId = id;
+  paintOverlays();
+  refreshList();
+  const ov = document.querySelector(`.f-overlay[data-fid="${id}"]`);
+  if (ov) ov.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function removeField(id) {
+  fields = fields.filter(f => f.id !== id);
+  if (selId === id) selId = null;
+  paintOverlays(); refreshList(); updateButtons();
+  if (currentTab === 'fill') renderFill();
+}
+
+function updateButtons() {
+  const has = fields.length > 0;
+  $id('save-cfg-btn').disabled = !has;
+  $id('share-btn').disabled    = !has;
+  $id('gen-btn').disabled      = !has || !pdfJsDoc;
+}
+
+// ── CONFIG SAVE / LOAD ─────────────────────────────────────────
+$id('save-cfg-btn').addEventListener('click', function() {
+  const cfg = { version:1, pdfUrl, fields: fields.map(({id,label,type,page,x,y,w,h}) => ({id,label,type,page,x,y,w,h})) };
+  const blob = new Blob([JSON.stringify(cfg,null,2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'form-config.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+});
+
+$id('cfg-input').addEventListener('change', async function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const cfg = JSON.parse(await file.text());
+    if (!cfg.fields) throw new Error('Bad config');
+    fields = cfg.fields.map(f => ({ ...f, value:'' }));
+    if (cfg.pdfUrl) { pdfUrl = cfg.pdfUrl; $id('pdf-url').value = pdfUrl; }
+    paintOverlays(); refreshList(); updateButtons();
+    if (currentTab === 'fill') renderFill();
+  } catch(err) { alert('Could not load config: ' + err.message); }
+});
+
+// ── TABS ───────────────────────────────────────────────────────
+function switchTab(t) {
+  currentTab = t;
+  $id('tab-map').classList.toggle('active', t === 'map');
+  $id('tab-fill').classList.toggle('active', t === 'fill');
+  $id('map-mode').classList.toggle('gone', t !== 'map');
+  $id('fill-mode').classList.toggle('vis', t === 'fill');
+  $id('map-hint').style.display = t === 'map' ? '' : 'none';
+  $id('mode-pill').textContent = t === 'map' ? 'Map' : 'Fill';
+  if (t === 'fill') renderFill();
+}
+$id('tab-map').addEventListener('click', () => switchTab('map'));
+$id('tab-fill').addEventListener('click', () => switchTab('fill'));
+
+// ── FILL UI ────────────────────────────────────────────────────
+function renderFill() {
+  const c = $id('fill-mode');
+  c.innerHTML = '';
+  if (!rawBytes) {
+    c.innerHTML = '<p style="text-align:center;padding:40px;color:var(--muted)">Upload a PDF first.</p>';
+    return;
+  }
+  if (!fields.length) {
+    c.innerHTML = '<p style="text-align:center;padding:40px;color:var(--muted)">No fields mapped. Go to Map Fields and draw boxes.</p>';
+    return;
+  }
+  const byPage = {};
+  fields.forEach(f => (byPage[f.page] = byPage[f.page] || []).push(f));
+  const pages = Object.keys(byPage).map(Number).sort((a,b) => a-b);
+  pages.forEach(p => {
+    if (pages.length > 1) {
+      const lbl = document.createElement('div');
+      lbl.className = 'pg-lbl'; lbl.textContent = 'Page ' + p;
+      c.appendChild(lbl);
+    }
+    byPage[p].forEach(f => {
+      const card = document.createElement('div');
+      card.className = 'fill-card';
+      if (f.type === 'checkbox') {
+        card.innerHTML = `<label>${f.label}</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.95rem;color:var(--ink);font-weight:500;text-transform:none;letter-spacing:0">
+            <input type="checkbox" data-fid="${f.id}" style="width:22px;height:22px;accent-color:var(--teal);cursor:pointer"/>Check this box</label>`;
+      } else if (f.type === 'textarea') {
+        card.innerHTML = `<label>${f.label}</label><textarea data-fid="${f.id}" placeholder="Type here…"></textarea>`;
+      } else if (f.type === 'signature') {
+        card.innerHTML = `<label>✍️ ${f.label}</label>
+          <div class="sig-wrap" id="sigwrap-${f.id}">
+            <canvas height="120" style="width:100%;touch-action:none;cursor:crosshair;display:block"></canvas>
+            <div class="sig-toolbar">
+              <span>Draw your signature above</span>
+              <button class="sig-clear-btn" data-sig-clear="${f.id}">Clear</button>
+            </div>
+          </div>`;
+      } else {
+        const itype = f.type === 'date' ? 'date' : f.type === 'tel' ? 'tel' : f.type === 'email' ? 'email' : 'text';
+        const imode = { tel:'tel', email:'email', date:'none' }[f.type] || 'text';
+        card.innerHTML = `<label>${f.label}</label>
+          <input type="${itype}" inputmode="${imode}" data-fid="${f.id}" placeholder="Enter ${f.label.toLowerCase()}…"/>`;
+      }
+      c.appendChild(card);
+
+      // restore values
+      if (f.type !== 'signature') {
+        const el = card.querySelector('[data-fid]');
+        if (el) { if (f.type === 'checkbox') el.checked = !!f.value; else el.value = f.value || ''; }
+      }
+      // init signature pad
+      if (f.type === 'signature') {
+        setTimeout(() => initSigPad(f.id, f.sigDataUrl || null), 0);
+        card.querySelector('[data-sig-clear]').addEventListener('click', () => clearSigPad(f.id));
+      }
+    });
+  });
+}
+
+// ── SIGNATURE PAD ──────────────────────────────────────────────
+function initSigPad(fieldId, existingDataUrl) {
+  const wrap = $id('sigwrap-' + fieldId); if (!wrap) return;
+  const canvas = wrap.querySelector('canvas');
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.offsetWidth, cssH = 120;
+  canvas.width  = cssW * dpr; canvas.height = cssH * dpr;
+  canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+  canvas._hasSig = false;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.strokeStyle = '#1a1f2e'; ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (existingDataUrl) {
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img, 0, 0, cssW, cssH); canvas._hasSig = true; };
+    img.src = existingDataUrl;
+  }
+  let drawing = false;
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
+  }
+  function down(e) { e.preventDefault(); drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+  function move(e) { e.preventDefault(); if (!drawing) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); canvas._hasSig = true; }
+  function up() { drawing = false; }
+  canvas.addEventListener('mousedown', down);
+  canvas.addEventListener('mousemove', move);
+  canvas.addEventListener('mouseup', up);
+  canvas.addEventListener('mouseleave', up);
+  canvas.addEventListener('touchstart', down, { passive:false });
+  canvas.addEventListener('touchmove',  move, { passive:false });
+  canvas.addEventListener('touchend', up);
+}
+
+function clearSigPad(fieldId) {
+  const wrap = $id('sigwrap-' + fieldId); if (!wrap) return;
+  const canvas = wrap.querySelector('canvas');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  canvas._hasSig = false;
+  const f = fields.find(ff => ff.id === fieldId);
+  if (f) { f.sigDataUrl = null; f.value = ''; }
+}
+
+// ── SHARE LINK ─────────────────────────────────────────────────
+$id('share-btn').addEventListener('click', function() {
+  const cfg = {
+    pdfUrl,
+    fields: fields.map(({id,label,type,page,x,y,w,h}) => ({id,label,type,page,x,y,w,h}))
+  };
+  const hash = btoa(unescape(encodeURIComponent(JSON.stringify(cfg))));
+  const url  = location.href.split('#')[0] + '#fill=' + hash;
+  $id('share-url-input').value = url;
+  $id('share-copy-msg').textContent = '';
+  $id('share-pdf-warn').style.display = pdfUrl ? 'none' : '';
+  $id('share-modal').classList.add('open');
+});
+
+$id('copy-btn').addEventListener('click', function() {
+  const val = $id('share-url-input').value;
+  const msg = $id('share-copy-msg');
+  navigator.clipboard.writeText(val)
+    .then(() => { msg.textContent = '✓ Copied to clipboard!'; })
+    .catch(() => {
+      $id('share-url-input').select();
+      document.execCommand('copy');
+      msg.textContent = '✓ Copied!';
+    });
+});
+
+$id('share-close-btn').addEventListener('click', () => $id('share-modal').classList.remove('open'));
+$id('share-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+
+// ── GENERATE PDF ───────────────────────────────────────────────
+$id('gen-btn').addEventListener('click', generatePDF);
+
+async function generatePDF() {
+  // collect values
+  document.querySelectorAll('#fill-mode [data-fid]').forEach(el => {
+    const f = fields.find(ff => ff.id === el.dataset.fid); if (!f) return;
+    f.value = el.type === 'checkbox' ? (el.checked ? '✓' : '') : el.value;
+  });
+  fields.filter(f => f.type === 'signature').forEach(f => {
+    const wrap = $id('sigwrap-' + f.id); if (!wrap) return;
+    const canvas = wrap.querySelector('canvas');
+    if (canvas && canvas._hasSig) f.sigDataUrl = canvas.toDataURL('image/png');
+  });
+
+  const btn = $id('gen-btn');
+  btn.disabled = true; btn.textContent = '⏳ Building PDF…';
+  try {
+    const numPages = pdfJsDoc.numPages;
+    const outDoc   = await PDFLib.PDFDocument.create();
+    const font     = await outDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+    const boldFont = await outDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+
+    for (let p = 1; p <= numPages; p++) {
+      btn.textContent = '⏳ Page ' + p + ' of ' + numPages + '…';
+      const pdfPage = await pdfJsDoc.getPage(p);
+      const vp = pdfPage.getViewport({ scale: 2 });
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width; canvas.height = vp.height;
+      await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+
+      const jpegBytes = Uint8Array.from(atob(canvas.toDataURL('image/jpeg', 0.92).split(',')[1]), c => c.charCodeAt(0));
+      const img = await outDoc.embedJpg(jpegBytes);
+      const pdfVp = pdfPage.getViewport({ scale: 1 });
+      const ptW = pdfVp.width, ptH = pdfVp.height;
+      const page = outDoc.addPage([ptW, ptH]);
+      page.drawImage(img, { x:0, y:0, width:ptW, height:ptH });
+
+      const pageFields = fields.filter(f => f.page === p && (f.value || (f.type === 'signature' && f.sigDataUrl)));
+      for (const f of pageFields) {
+        const px = f.x * ptW, boxH = f.h * ptH, boxW = f.w * ptW;
+        const py = ptH - (f.y * ptH) - boxH;
+
+        if (f.type === 'checkbox') {
+          const sz = Math.min(boxW, boxH) * 0.72;
+          page.drawText('✓', { x: px+(boxW-sz*.55)/2, y: py+(boxH-sz)/2, size:sz, font:boldFont, color:PDFLib.rgb(.05,.45,.40) });
+        } else if (f.type === 'signature' && f.sigDataUrl) {
+          const sigBytes = Uint8Array.from(atob(f.sigDataUrl.split(',')[1]), c => c.charCodeAt(0));
+          const sigImg = await outDoc.embedPng(sigBytes);
+          const aspect = sigImg.width / sigImg.height;
+          let dw = boxW, dh = boxW / aspect;
+          if (dh > boxH) { dh = boxH; dw = boxH * aspect; }
+          page.drawImage(sigImg, { x: px+(boxW-dw)/2, y: py+(boxH-dh)/2, width:dw, height:dh, opacity:.92 });
+        } else if (f.type !== 'signature' && f.value) {
+          const fontSize = Math.max(6, Math.min(boxH * .65, 13));
+          const lines = wrapText(f.value, boxW-4, fontSize, font);
+          lines.forEach((line, i) => {
+            const ly = py + boxH - fontSize*1.05 - i*fontSize*1.3;
+            if (ly < py-1) return;
+            page.drawText(line, { x:px+2, y:Math.max(py+1,ly), size:fontSize, font, color:PDFLib.rgb(.05,.05,.05) });
+          });
+        }
+      }
+    }
+    const out  = await outDoc.save();
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(new Blob([out], { type:'application/pdf' }));
+    a.download = 'filled-application.pdf';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  } catch(err) {
+    alert('Error: ' + err.message);
+  }
+  btn.disabled = false; btn.textContent = '✅ Generate filled PDF';
+  updateButtons();
+}
+
+function wrapText(text, maxW, size, font) {
+  const words = text.split(' '); const lines = []; let cur = '';
+  for (const word of words) {
+    const test = cur ? cur + ' ' + word : word;
+    try { if (font.widthOfTextAtSize(test, size) > maxW && cur) { lines.push(cur); cur = word; } else cur = test; }
+    catch(_) { cur = test; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+// ── HASH-BASED FILL-ONLY MODE ──────────────────────────────────
+async function checkHash() {
+  const hash = location.hash;
+  if (!hash.startsWith('#fill=')) return;
+  let cfg;
+  try { cfg = JSON.parse(decodeURIComponent(escape(atob(hash.slice(6))))); }
+  catch(e) { alert('Invalid share link.'); return; }
+
+  fields = (cfg.fields || []).map(f => ({ ...f, value:'' }));
+  pdfUrl = cfg.pdfUrl || '';
+
+  // Fill-only UI: hide sidebar, go full width
+  $id('sidebar').style.display = 'none';
+  $id('topbar').querySelector('h1').textContent = '✏️ Fill Out Form';
+  $id('mode-pill').style.display = 'none';
+  $id('map-mode').classList.add('gone');
+  $id('empty-state').style.display = 'none';
+  currentTab = 'fill';
+
+  // Style #main to be a simple scrolling column, centered
+  const main = $id('main');
+  main.style.cssText = 'flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;align-items:center;gap:0';
+
+  // Wrapper div that holds everything in fill-only mode — lives in #main, NOT inside #fill-mode
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'width:100%;max-width:640px;display:flex;flex-direction:column';
+  main.appendChild(wrapper);
+
+  // Status banner (inside wrapper, above fields)
+  const banner = document.createElement('div');
+  banner.id = 'fill-banner';
+  banner.style.cssText = 'margin-bottom:14px;font-size:.85rem;color:#7c4a00;background:var(--amber-light);border-left:3px solid var(--amber);padding:10px 12px;border-radius:6px;display:none';
+  wrapper.appendChild(banner);
+
+  // #fill-mode sits inside wrapper (renderFill writes into it safely)
+  const fillMode = $id('fill-mode');
+  fillMode.style.cssText = 'display:block;width:100%';
+  wrapper.appendChild(fillMode);
+
+  // Sticky download button — lives in wrapper AFTER fill-mode, never touched by renderFill
+  const footer = document.createElement('div');
+  footer.style.cssText = 'position:sticky;bottom:0;background:var(--surface);padding:14px 0 24px;margin-top:8px';
+  const dlBtn = document.createElement('button');
+  dlBtn.className = 'btn btn-teal';
+  dlBtn.style.cssText = 'width:100%;padding:16px;font-size:1rem';
+  dlBtn.textContent = '✅ Download filled PDF';
+  dlBtn.addEventListener('click', generatePDF);
+  footer.appendChild(dlBtn);
+  wrapper.appendChild(footer);
+
+  // Load PDF from URL
+  if (pdfUrl) {
+    banner.style.display = ''; banner.textContent = 'Loading form PDF…';
+    try {
+      const res = await fetch(pdfUrl);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      rawBytes = new Uint8Array(await res.arrayBuffer());
+      pdfJsDoc = await pdfjsLib.getDocument({ data: rawBytes }).promise;
+      banner.style.display = 'none';
+    } catch(err) {
+      banner.textContent = '⚠ Could not load PDF automatically (' + err.message + '). Please upload it below.';
+      addUploadFallback(wrapper, fillMode);
+    }
+  } else {
+    addUploadFallback(wrapper, fillMode);
+  }
+
+  updateButtons();
+  renderFill();
+}
+
+function addUploadFallback(wrapper, fillMode) {
+  const notice = document.createElement('div');
+  notice.className = 'notice';
+  notice.style.marginBottom = '14px';
+  notice.innerHTML = '📄 Please upload the PDF form so your filled version can be generated.<br/><label style="display:inline-flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-weight:600;font-size:.85rem;color:var(--teal)"><input type="file" accept=".pdf" id="fill-pdf-upload" style="display:none"/>⬆ Upload PDF</label>';
+  // Insert before fill-mode inside wrapper
+  wrapper.insertBefore(notice, fillMode);
+  $id('fill-pdf-upload').addEventListener('change', async function(e) {
+    const file = e.target.files[0]; if (!file) return;
+    rawBytes = new Uint8Array(await file.arrayBuffer());
+    pdfJsDoc = await pdfjsLib.getDocument({ data: rawBytes }).promise;
+    notice.style.display = 'none';
+    updateButtons();
+  });
+}
+
+checkHash();
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>

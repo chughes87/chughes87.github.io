@@ -556,12 +556,8 @@ $id('tab-fill').addEventListener('click', () => switchTab('fill'));
 function renderFill() {
   const c = $id('fill-mode');
   c.innerHTML = '';
-  if (!rawBytes) {
-    c.innerHTML = '<p style="text-align:center;padding:40px;color:var(--muted)">Upload a PDF first.</p>';
-    return;
-  }
   if (!fields.length) {
-    c.innerHTML = '<p style="text-align:center;padding:40px;color:var(--muted)">No fields mapped. Go to Map Fields and draw boxes.</p>';
+    c.innerHTML = '<p style="text-align:center;padding:40px;color:var(--muted)">No fields mapped.</p>';
     return;
   }
   const byPage = {};
@@ -859,6 +855,7 @@ function addUploadFallback(wrapper, fillMode) {
     pdfJsDoc = await pdfjsLib.getDocument({ data: rawBytes }).promise;
     notice.style.display = 'none';
     updateButtons();
+    renderFill();
   });
 }
 
